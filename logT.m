@@ -12,7 +12,7 @@ for i = 1 : n
         continue;
     end
     w = v(i, 1:3) / theta;
-    W = vec2skew_mat(w);
+    W = so_w(w);
     W2 = W * W;
     v(i, 4:6) = (I - theta / 2 * W + (1 - theta / 2 * cot(theta/2)) * W2) * p;
 end

@@ -1,4 +1,5 @@
 function sa = screw_axis(v)
+% v is nx6 each row represents a twist
 if iscolumn(v)
     v = v';
 end

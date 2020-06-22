@@ -1,5 +1,5 @@
 function v = sm2twist(sm)
-% sm: q (point), s (u-axis), theta, h (pitch) 
+% sm (screw motion): [q (point), s (u-axis), h (pitch), theta] 
 if iscolumn(sm)
     sm = sm';
 end
@@ -8,8 +8,8 @@ v = zeros(n, 6);
 for i = 1 : n
     q = sm(i, 1:3);
     s = sm(i, 4:6) / norm(sm(i, 4:6));
-    theta = sm(i, 7);
-    h = sm(i, 8);
+    theta = sm(i, 8);
+    h = sm(i, 7);
     if isinf(h)
         v(i, :) = [0 0 0 s] * theta;
     else

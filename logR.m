@@ -1,5 +1,6 @@
 function w = logR(R)
-eps = 1e-9;
+% rotation R -> axis angle rep
+eps = 1e-10;
 n = size(R, 3);
 w = zeros(n, 3);
 I = eye(3);
