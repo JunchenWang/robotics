@@ -1,21 +1,10 @@
-function sa = screw_axis(v)
-% v is nx6 each row represents a twist
-if iscolumn(v)
-    v = v';
+function sa = screw_axis(p, dir, h)
+% p and dir are nx3, representing a point and a direction
+% direction does not need to be normalized
+if iscolumn(p)
+    p = p';
+    dir = dir';
 end
-n = size(v, 1);
-sa = zeros(n, 7);
-for i = 1 : n
-    if norm(v(i,:)) <= eps
-        sa(i,6) = 1;
-        continue;
-    end
-    theta = norm(v(i,1:3));
-    if theta <= eps
-        sa(i, 7) = norm(v(i, 4:6));
-        sa(i, 4:6) = v(i, 4:6) / sa(i, 7);
-    else
-        sa(i, 7) = theta;
-        sa(i, 1:6) = v(i,1:6) / theta;
-    end
-end
+n = size(p,1);
+sm = cat(2, p, dir, ones(n, 1) * h, ones(n, 1));
+sa = sm2twist(sm);
