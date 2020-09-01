@@ -12,7 +12,7 @@ if strcmp(type, 'rv')
     crosst_P = cross(r, P);
     P_new = P + sin(phi) / phi * crosst_P + (1 - cos(phi)) / phi.^2 * cross(r, crosst_P);
 elseif strcmp(type, 'angle')
-    R = thetaXYZ2R(r);
+    R = EulXYZ2R(r);
     P_new = R * P;
 else
     error('unsupported rotation representation');
