@@ -1,0 +1,9 @@
+function J = derivative_qd_f(f)
+r = f(1:3);
+t = f(4:6);
+J = zeros(8, 6);
+q = r_q_converter(r);
+Jr = derivative_q_r(r);
+J(1:4,:) = [Jr, zeros(4, 3)];
+[J1 J2] = derivative_q2starq1([0; t], q);
+J(5:8,:) = 0.5 * [J2 * Jr, J1 * [0 0 0; eye(3)]];

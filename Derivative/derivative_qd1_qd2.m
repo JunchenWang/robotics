@@ -1,0 +1,10 @@
+function [Jd1 Jd2] = derivative_qd1_qd2(qd1, qd2)
+q1 = qd1(1 : 4);
+q1_e = qd1(5 : 8);
+q2 = qd2(1 : 4);
+q2_e = qd2(5 : 8);
+[J1 J2] = derivative_q2starq1(q1, q2);
+[J3 J4] = derivative_q2starq1(q1, q2_e);
+[J5 J6] = derivative_q2starq1(q1_e, q2);
+Jd1 = [J1 zeros(4); J3 J5];
+Jd2 = [J2 zeros(4); J6 J4];
