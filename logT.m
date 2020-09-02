@@ -1,4 +1,5 @@
 function v = logT(T)
+% solve for twist given T
 n = size(T, 3);
 v = zeros(n, 6);
 I = eye(3);
@@ -7,7 +8,7 @@ for i = 1 : n
     p = T(1:3,4,i);
     v(i, 1:3) = logR(R);
     theta = norm(v(i, 1:3));
-    if theta <= eps
+    if theta == 0
         v(i,:) = [0 0 0 p'];
         continue;
     end
