@@ -20,10 +20,10 @@ for k = 1 : MC
         rA = fA(1:3, i);
         tA = fA(4 : 6, i);
         %add noise
-        tA= tA +  0.5 * C * 0.2 * randn(3, 1);
-        rA = rA +0.5 * C * 0.01 * randn(3, 1);
-        tB= tB + 0.5 * C * 0.2 * randn(3, 1);
-        rB = rB + 0.5 * C * 0.01 * randn(3, 1);
+        tA= tA +  C * 0.2 * randn(3, 1);
+        rA = rA +C * 0.01 * randn(3, 1);
+        tB= tB + C * 0.2 * randn(3, 1);
+        rB = rB + C * 0.01 * randn(3, 1);
               
         fA_n(:, i) = [rA; tA];
         fB_n(:, i) = [rB; tB];
