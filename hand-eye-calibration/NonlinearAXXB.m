@@ -16,7 +16,7 @@ x0 = [q0; t0];
 % opt = optimset(@lsqnonlin);
 % opt = optimset(opt, 'Display',  'iter', 'Algorithm', 'levenberg-marquardt','Jacobian', 'on', 'TolFun', 1e-12, 'TolX', 1e-12, 'DerivativeCheck', 'on');
 % [x,err,RESIDUAL,EXITFLAG,OUTPUT] = lsqnonlin(f, x0, [], [], opt);
-x = LevenbergMarquardt(f, x0, [], [], [], [], 0);
+x = LevenbergMarquardt(f, x0, 1e-12, 1e-12, 1e-12, [], 0);
 fX = [r_q_converter(x(1 : 4)); x(5 : 7)];
 
 function [f J] = objFunc(q, t, fA, fB, lambda1, lambda2, lambda)

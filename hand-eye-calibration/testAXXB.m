@@ -1,16 +1,16 @@
 function [err_relative_r, err_relative_t, fX] = testAXXB
-n = 20;
+n = 200;
 [fA, fB, fX] = GenerateABX(n);
 fA_n = fA;
 fB_n = fB;
-MC = 100;
+MC = 1;
 r = norm(fX(1:3));
 t = norm(fX(4:6));
 err_r = zeros(3, MC);
 err_t = err_r;
 err_relative_r = zeros(3, 10);
 err_relative_t = zeros(3, 10);
-for C = 1 : 10
+for C = 1 : 1
     time = tic;
 for k = 1 : MC
     for i = 1 : n
@@ -20,17 +20,21 @@ for k = 1 : MC
         rA = fA(1:3, i);
         tA = fA(4 : 6, i);
         %add noise
-        tA= tA +  C * 0.2 * randn(3, 1);
-        rA = rA + C * 0.01 * randn(3, 1);
-        tB= tB + C * 0.2 * randn(3, 1);
-        rB = rB + C * 0.01 * randn(3, 1);
+        tA= tA +  0.5 * C * 0.2 * randn(3, 1);
+        rA = rA +0.5 * C * 0.01 * randn(3, 1);
+        tB= tB + 0.5 * C * 0.2 * randn(3, 1);
+        rB = rB + 0.5 * C * 0.01 * randn(3, 1);
               
         fA_n(:, i) = [rA; tA];
         fB_n(:, i) = [rB; tB];
     end
+    disp('***************optimal*******************');
     fX1 = AXXB_optimal(fA_n, fB_n) - fX;
+    disp('***************de*******************');
     fX2 = AXXB_de(fA_n, fB_n) - fX;
+    disp('***************nonlinear*******************');
     fX3 = NonlinearAXXB(fA_n, fB_n) - fX;
+    disp('***************finish*******************');
     err_r(1,k) = norm(fX1(1:3));
     err_t(1,k) = norm(fX1(4:6));
     err_r(2,k) = norm(fX2(1:3));
@@ -50,6 +54,7 @@ end
 plot(err_relative_r');
 figure;
 plot(err_relative_t');
+disp(fX);
 % fX1 = NonlinearAXXB(fA, fB);
 % fX2 = AXXB_de(fA, fB);
 % fX3 = AXXB_dq(fA, fB);

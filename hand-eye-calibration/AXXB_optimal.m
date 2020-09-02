@@ -1,12 +1,12 @@
 function fX = AXXB_optimal(fA, fB)
-fX0 = NonlinearAXXB(fA, fB);
-% fX0 = AXXB_de(fA, fB);
+% fX0 = NonlinearAXXB(fA, fB);
+fX0 = AXXB_de(fA, fB);
 x0 = [fB(:); fX0];
 f = @(x) Func(x, fA, fB);
 % opt = optimset(@lsqnonlin);
-% opt = optimset(opt, 'Display',  'iter', 'Algorithm', 'levenberg-marquardt','Jacobian', 'on', 'TolFun', 1e-12, 'TolX', 1e-12, 'DerivativeCheck', 'off');
-% [x2,err,RESIDUAL,EXITFLAG,OUTPUT] = lsqnonlin(f, x0, [], [], opt);
-x = LevenbergMarquardt(f, x0, [], [], [], [], 0);
+% opt = optimset(opt, 'Display',  'off', 'Algorithm', 'levenberg-marquardt','Jacobian', 'on', 'TolFun', 1e-12, 'TolX', 1e-12, 'DerivativeCheck', 'off');
+% [x,err,RESIDUAL,EXITFLAG,OUTPUT] = lsqnonlin(f, x0, [], [], opt);
+x = LevenbergMarquardt(f, x0, 1e-12, 1e-12, 1e-12, [], 0);
 fX = x(end - 5 : end);
 
 
