@@ -37,14 +37,16 @@ for i = 1 : n
     for j = i + 1 : n
         fa = ConcatenateFrame(InverseFrame(A(:, i)), A(:, j));
         fb = ConcatenateFrame(InverseFrame(B(:, i)), B(:, j));
-        anga = abs(fa(1:3)) / pi * 180;
-        angb = abs(fb(1:3)) / pi * 180;
-        if abs(anga - angb) < 1 && abs(anga) > 20 && abs(anga) < 100
+        anga = norm(fa(1:3)) / pi * 180;
+        angb = norm(fb(1:3)) / pi * 180;
+        if abs(anga - angb) < 1 && abs(anga) > 20 && abs(anga) < 150
             fA(:,cnt) = fa;
             fB(:,cnt) = fb;
             cnt = cnt + 1;
+        else
+            disp([anga, angb]);
         end
     end
 end
-fA(:,cnt + 1:end) = [];
-fB(:,cnt + 1:end) = [];
+fA(:,cnt:end) = [];
+fB(:,cnt:end) = [];
