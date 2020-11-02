@@ -97,7 +97,11 @@ if delta2 < 0
 else
     kesai_1 = 2*atan((-bp+sqrt(delta2)) / (2*ap));
     kesai_2 = 2*atan((-bp-sqrt(delta2)) / (2*ap));
-    
+    if kesai_1 > kesai_2
+        tem = kesai_1;
+        kesai_1 = kesai_2;
+        kesai_2 = tem;
+    end
     t1 = atan2(cfg * (A(3,2) * sin(kesai_1) + B(3,2) * cos(kesai_1) + C(3,2)),...
         -cfg * (A(3,1) * sin(kesai_1) + B(3,1) * cos(kesai_1) + C(3,1)));
     t2 = atan2(cfg * (A(3,2) * sin(kesai_2) + B(3,2) * cos(kesai_2) + C(3,2)),...
