@@ -33,3 +33,6 @@ packages/
 *.mat
 *.slxc
 *.xml
+codegen/
+*.mexw64
+*.prj
