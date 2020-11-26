@@ -3,8 +3,8 @@ function [angles, bounds] = inverse_kin_kuka(R, t, cfg)
 % cfg signs of axis 2,4,6
 lower = [-170, -120, -170, -120 ,-170, -120, -175] / 180 * pi;
 upper = -lower;
-eps1 = 1e-6;
-eps2 = 1e-6;
+eps1 = 1e-8;%not change
+eps2 = 1e-4;%not change
 z = [0, 0, 1]';
 d1 = 340;
 d3 = 400;
@@ -17,9 +17,9 @@ l_p26 = norm(p26);
 p26_hat = p26 / l_p26;
 l2_p26 = p26'*p26;
 theta3 = 0;
-theta4 = cfg(2) * acos((l2_p26 - d3*d3 - d5*d5) / (2*d3*d5));
+theta4 = cfg(2) * real(acos((l2_p26 - d3*d3 - d5*d5) / (2*d3*d5)));
 R34 = [cos(theta4), 0, -sin(theta4);0, 1, 0;sin(theta4), 0, cos(theta4)];
-if norm(cross(p26_hat, z)) < eps1
+if abs(abs(dot(p26_hat, z)) - 1) < eps1
     theta1 = 0;
 else
     theta1 = atan2(p26(2), p26(1));
@@ -36,16 +36,19 @@ Cs = p26_hat * p26_hat' * R03;
 Aw = R34' * As' * R;
 Bw = R34' * Bs' * R;
 Cw = R34' * Cs' * R;
-
-bounds = anlysis_kesai(As, Bs, Cs, Aw, Bw, Cw, cfg, lower, upper);
+axis = [1,2,3,5,6,7];
+% if real(acos(Cw(3,3)-sqrt(Aw(3,3)^2+Bw(3,3)^2))) < eps2
+%     axis(4:end)=[];
+% end
+% if real(acos(Cs(3,3)-sqrt(As(3,3)^2+Bs(3,3)^2))) < eps2
+%     axis(1:3)=[];
+% end
+bounds = anlysis_kesai(As, Bs, Cs, Aw, Bw, Cw, cfg, lower, upper,axis);
 if isempty(bounds)
-    error('can not find kesai!');
+    angles=[];
+    return;
 end
-if length(bounds) == 2 || length(bounds) == 4 && bounds(2) - bounds(1) > bounds(4) - bounds(3)
-    kesai = (bounds(1) + bounds(2)) / 2;
-else
-    kesai = (bounds(3) + bounds(4)) / 2;
-end
+kesai = choose_kesai(bounds);
 theta2 = cfg(1) * real(acos(As(3,3) * sin(kesai) + Bs(3,3) * cos(kesai) + Cs(3,3)));
 if abs(theta2) < eps2
     % theta1 + theta3;
@@ -70,9 +73,20 @@ else
     theta7 = atan2(cfg(3) * (Aw(3,2) * sin(kesai) + Bw(3,2) * cos(kesai) + Cw(3,2)),...
         -cfg(3) * (Aw(3,1) * sin(kesai) + Bw(3,1) * cos(kesai) + Cw(3,1)));
 end
-angles = [theta1, theta2, theta3, theta4, theta5, theta6, theta7] / pi * 180;
+angles = [theta1, theta2, theta3, theta4, theta5, theta6, theta7];
 end
 
+function kesai=choose_kesai(bounds)
+len = bounds(2) - bounds(1);
+j = 1;
+for i = 3 : 2 : length(bounds)
+    if bounds(i+1)-bounds(i) > len
+        len = bounds(i+1)-bounds(i);
+        j = i;
+    end
+end
+kesai = (bounds(j) + bounds(j+1)) / 2;
+end
 
 function theta = kesai2theta_hj(kesai, a, b, c, cfg)
     theta = cfg*real(acos(a*sin(kesai) + b*cos(kesai) + c));
@@ -91,14 +105,13 @@ end
 function bounds = kesai_range_hj(str, a, b, c, cfg, lower, upper)
     y = @(kesai) kesai2theta_hj(kesai, a, b, c, cfg);
     k = @(theta) theta2kesai_hj(theta, a, b, c);
-    x = linspace(-pi, pi, 100);
-    x = x(2:end);
-    figure;
-    plot(x, y(x));
-    title(str);
-    grid on;
-    delta = a^2+b^2;
-    if abs(delta) < 1e-12 % a=0,b=0 theta is appx. constant wrt. kesasi
+%     x = linspace(-pi, pi, 1000);
+%     figure;
+%     plot(x, y(x));
+%     title(str);
+%     grid on;
+%     delta = a^2+b^2;
+    if abs(a) < eps && abs(b) < eps % a=0,b=0 theta is appx. constant wrt. kesasi
         theta = y(0);
         if theta > lower && theta < upper
             bounds =[-pi, pi];
@@ -113,12 +126,18 @@ function bounds = kesai_range_hj(str, a, b, c, cfg, lower, upper)
             bounds=[-pi, theta - 0.1, theta + 0.1, pi];
             if cfg > 0 && theta2 > upper
                 ks = k(upper);
-                bounds(1) = ks(1);
-                bounds(4) = ks(2);
+                if b*sin(ks(1)) - a*cos(ks(1)) > 0
+                    bounds = bd_intersection(bounds, [-pi, ks(1), ks(2), pi]);
+                else
+                     bounds = bd_intersection(bounds, [ks(1), ks(2)]);
+                end
             elseif cfg < 0 && theta2 < lower
                 ks = k(lower);
-                bounds(1) = ks(1);
-                bounds(4) = ks(2);
+                if b*sin(ks(1)) - a*cos(ks(1)) > 0
+                    bounds = bd_intersection(bounds, [-pi, ks(1), ks(2), pi]);
+                else
+                     bounds = bd_intersection(bounds, [ks(1), ks(2)]);
+                end
             end
         else
             d2 = (b*cos(kesai)+a*sin(kesai))/sin(theta);
@@ -127,12 +146,18 @@ function bounds = kesai_range_hj(str, a, b, c, cfg, lower, upper)
                    bounds = []; 
                elseif cfg > 0 && theta > upper
                    ks = k(upper);
-                   bounds(1) = -pi;
-                   bounds(2) = ks(1);
-                   bounds(3) = ks(2);
-                   bounds(4) = pi;
+                   if b*sin(ks(1)) - a*cos(ks(1)) > 0
+                       bounds= [-pi, ks(1), ks(2), pi];
+                   else
+                       bounds= [ks(1), ks(2)];
+                   end
                elseif cfg < 0 && theta2 < lower
-                   bounds = k(lower);
+                   ks = k(lower);
+                   if b*sin(ks(1)) - a*cos(ks(1)) > 0
+                       bounds= [-pi, ks(1), ks(2), pi];
+                   else
+                       bounds= [ks(1), ks(2)];
+                   end
                else
                    bounds = [-pi, pi];
                end 
@@ -140,13 +165,19 @@ function bounds = kesai_range_hj(str, a, b, c, cfg, lower, upper)
                if cfg > 0 && theta >= upper || cfg < 0 && theta2 <= lower
                    bounds = [];  
                elseif cfg > 0 && theta2 > upper
-                   bounds = k(upper);
+                   ks = k(upper);
+                   if b*sin(ks(1)) - a*cos(ks(1)) > 0
+                       bounds= [-pi, ks(1), ks(2), pi];
+                   else
+                       bounds= [ks(1), ks(2)];
+                   end
                elseif cfg < 0 && theta < lower
                    ks = k(lower);
-                   bounds(1) = -pi;
-                   bounds(2) = ks(1);
-                   bounds(3) = ks(2);
-                   bounds(4) = pi;
+                   if b*sin(ks(1)) - a*cos(ks(1)) > 0
+                       bounds= [-pi, ks(1), ks(2), pi];
+                   else
+                       bounds= [ks(1), ks(2)];
+                   end
                else
                    bounds = [-pi, pi];
                end 
@@ -161,7 +192,7 @@ function theta = kesai2theta_pj(kesai, an, bn, cn, ad, bd, cd, cfg)
                        cfg*(ad*sin(kesai)+bd*cos(kesai)+cd));
 end
 
-function kesai = theta2kesai_pj(theta, an, bn, cn, ad, bd, cd)
+function kesai = theta2kesai_pj_2(theta, an, bn, cn, ad, bd, cd)
     ap = (cd-bd)*tan(theta)+(bn-cn);
     bp = 2*(ad*tan(theta)-an);
     cp = (bd+cd)*tan(theta)-(bn+cn);
@@ -174,48 +205,77 @@ function kesai = theta2kesai_pj(theta, an, bn, cn, ad, bd, cd)
     end
 end
 
+function kesai = theta2kesai_pj_1(theta, an, bn, cn, ad, bd, cd, cfg)
+    ap = (cd-bd)*tan(theta)+(bn-cn);
+    bp = 2*(ad*tan(theta)-an);
+    cp = (bd+cd)*tan(theta)-(bn+cn);
+    if abs(ap) < eps(bp)
+        kesai = -cp/bp;
+        return;
+    end
+    delta2 = bp^2 - 4*ap*cp;
+    kesai1 = 2*atan((-bp-sqrt(delta2)) / (2*ap));
+    kesai2 = 2*atan((-bp+sqrt(delta2)) / (2*ap));
+    e1 = abs(kesai2theta_pj(kesai1, an, bn, cn, ad, bd, cd, cfg) - theta)/abs(theta);
+    e2 = abs(kesai2theta_pj(kesai2, an, bn, cn, ad, bd, cd, cfg) - theta)/abs(theta);
+    if e1 < e2
+        kesai = kesai1;
+    else
+        kesai = kesai2;
+    end
+end
+
+function [kesai1, kesai2] = reorder(kesai1, kesai2)
+    if kesai1 > kesai2
+        tem = kesai1;
+        kesai1 = kesai2;
+        kesai2 = tem;
+    end
+end
+
+function bounds = bd_union(bd1, bd2)
+    bounds = cat(2, bd1, bd2);
+end
 
 function bounds = bd_intersection(bd1, bd2)
     if isempty(bd1) || isempty(bd2)
         bounds = [];
         return;
     end
-    bounds = zeros(1,4);
-    cnt = 1;
-    for i = 1 : 2 : length(bd1)
-        for j = 1 : 2 : length(bd2)
-            a = max(bd1(i), bd2(j));
-            b = min(bd1(i+1), bd2(j+1));
+    n1 = length(bd1)/2;
+    n2 = length(bd2)/2;
+    bounds = zeros(1,n1*n2);
+    cnt = 0;
+    for i = 1 : n1
+        for j = 1 : n2
+            a = max(bd1(2*i-1), bd2(2*j-1));
+            b = min(bd1(2*i), bd2(2*j));
             if a<=b
-                bounds(cnt) = a;
-                bounds(cnt+1) = b;
-                cnt = cnt + 2;
+                cnt = cnt + 1;
+                bounds(2*cnt-1) = a;
+                bounds(2*cnt) = b;
             end
         end
     end
-    bounds(cnt:end) = [];
+    bounds(2*cnt+1:end) = [];
 end
 
 function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
-% bn = -bn;
-% bd = -bd;
-% cn = bn +1e-6;
-% cd = bd;
     y = @(kesai) kesai2theta_pj(kesai, an, bn, cn, ad, bd, cd, cfg);
-    k = @(theta) theta2kesai_pj(theta, an, bn, cn, ad, bd, cd);
-    
-    x = linspace(-pi, pi, 1000);
-    x = x(2:end);
-    figure;
-    plot(x, y(x));
-    title(str);
-    grid on;
-    % theta = atan2(u, v)
+    k2 = @(theta) theta2kesai_pj_2(theta, an, bn, cn, ad, bd, cd);
+    k1 = @(theta) theta2kesai_pj_1(theta, an, bn, cn, ad, bd, cd, cfg);
+    tol = 0.1;
+%     x = linspace(-pi, pi, 1000);
+%     figure;
+%     plot(x, y(x));
+%     title(str);
+%     grid on;
     at = cn*bd-bn*cd; %原论文有错，不带cfg
     bt = an*cd-cn*ad;
     ct = an*bd-bn*ad;
     d = @(kesai) at*sin(kesai)+bt*cos(kesai)+ct;
-    if abs(at) < 1e-6 && abs(bt) < 1e-6 && abs(ct) < 1e-6 % theta is constant wrt. kesai
+%     if abs(at) < eps && abs(bt) < eps && abs(ct) < eps % theta is constant wrt. kesai
+    if abs(at) == 0 && abs(bt)== 0 && abs(ct) == 0
         theta = y(0);
         if upper >= theta && lower <= theta
             bounds = [-pi, pi];
@@ -225,21 +285,104 @@ function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
             return;
         end
     end
-    delta = at^2 + bt^2 - ct^2;
-    if abs(delta) <= 1e-6
-        tol = 0.1; % 5.7 degree
-        if bt ~= ct
-            kesai_s = 2*atan(at/(bt-ct)); % singular arm angle
-        else
-            error('check it 1!');
-%             kesai_s = 2*atan(-(bt+ct)/(2*at));
+    delta = (at^2 + bt^2 - ct^2);
+    delta_n = delta /(at^2 + bt^2 + ct^2);
+    if abs(delta_n) <= 1e-4 % singularity
+        if bt == ct || abs(bt-ct)/(abs(bt)+abs(ct)) < 1e-4 % singularity at +-pi
+            kesai_s = 2*atan(-(bt+ct)/(2*at));
+            if kesai_s > 0
+                kesai2 = kesai_s - tol;
+                kesai1 = max(-pi,kesai_s-2*pi+tol);
+            else
+                kesai1 = kesai_s + tol;
+                kesai2 = min(pi,kesai_s+2*pi-tol);
+            end
+            theta1 = y(kesai1);
+            theta2 = y(kesai2);
+            bounds = [kesai1, kesai2];
+            if (theta2-theta1)*d(kesai1) > 0 % no jump
+                u = max(theta1, theta2);
+                l = min(theta1, theta2);
+                if upper <= l || lower >= u
+                    bounds = [];
+                    return;
+                end
+                if upper < u
+                    kesai = k2(upper);
+                    if pi-abs(kesai(1)) > pi-abs(kesai(2))
+                        kesai = kesai(1);
+                    else
+                        kesai = kesai(2);
+                    end
+                    if d(kesai) > 0
+                        bounds = bd_intersection(bounds, [kesai1, kesai]);
+                    else
+                        bounds = bd_intersection(bounds, [kesai, kesai2]);
+                    end
+                end
+                if lower > l
+                    kesai = k2(lower);
+                    if pi-abs(kesai(1)) > pi-abs(kesai(2))
+                        kesai = kesai(1);
+                    else
+                        kesai = kesai(2);
+                    end
+                    if d(kesai) > 0
+                        bounds = bd_intersection(bounds, [kesai, kesai2]);
+                    else
+                        bounds = bd_intersection(bounds, [kesai1, kesai]);
+                    end
+                end
+            else % with jump
+                bd = [];
+                if theta1 > theta2 % jump down
+                    if theta1 < upper
+                        kesai = k2(upper);
+                        if pi-abs(kesai(1)) > pi-abs(kesai(2))
+                            kesai = kesai(1);
+                        else
+                            kesai = kesai(2);
+                        end
+                        bd = cat(2, bd, [-pi, kesai]);
+                    end
+                    if theta2 > lower
+                        kesai = k2(lower); 
+                        if pi-abs(kesai(1)) > pi-abs(kesai(2))
+                            kesai = kesai(1);
+                        else
+                            kesai = kesai(2);
+                        end
+                        bd = cat(2, bd, [kesai, pi]);
+                    end
+                    bounds = bd_intersection(bounds, bd);
+                else
+                    if theta2 < upper
+                        kesai = k2(upper);
+                        if pi-abs(kesai(1)) > pi-abs(kesai(2))
+                            kesai = kesai(1);
+                        else
+                            kesai = kesai(2);
+                        end
+                        bd = cat(2, bd, [kesai, pi]);
+                    end
+                    if theta1 > lower
+                        kesai= k2(lower); 
+                        if pi-abs(kesai(1)) > pi-abs(kesai(2))
+                            kesai = kesai(1);
+                        else
+                            kesai = kesai(2);
+                        end
+                        bd = cat(2, bd, [-pi, kesai]);
+                    end
+                    bounds = bd_intersection(bounds, bd);
+                end
+            end
+            return;
         end
+        kesai_s = 2*atan(at/(bt-ct)); % singular arm angle
         kesai1 = kesai_s - tol;
         kesai2 = kesai_s + tol;
-        bounds(1) = -pi;
-        bounds(2) = kesai1;
-        bounds(3) = kesai2;
-        bounds(4) = pi;
+        bounds = [-pi, kesai1, kesai2, pi];
         theta1 = y(kesai1);
         d1 = d(kesai1);
         theta2 = y(kesai2);
@@ -251,11 +394,7 @@ function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
                     return;
                 end
                 if theta1 > upper
-                    for kesai = k(upper)
-                        if abs(y(kesai) - upper) < 1e-3
-                            break;
-                        end
-                    end
+                    kesai = k1(upper);
                     if kesai < kesai1
                         bounds(2) = kesai;
                     else
@@ -263,11 +402,7 @@ function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
                     end
                 end
                 if theta2 < lower
-                    for kesai = k(lower)
-                        if abs(y(kesai) - lower) < 1e-3
-                            break;
-                        end
-                    end
+                    kesai = k1(lower);
                     if kesai > kesai2
                         bounds = bd_intersection(bounds, [-pi, kesai1, kesai, pi]);
                     else
@@ -277,25 +412,21 @@ function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
             else % 2
                 flag1 = 0; flag2 = 0;
                 if theta1 < upper
-                    for kesai = k(upper)
-                        if abs(y(kesai) - upper) < 1e-3
-                            break;
-                        end
-                    end
+                    kesai = k1(upper);
                     if kesai < kesai1
                         bounds(1) = kesai;
+                    else
+                         bounds = cat(2, bounds, [kesai, pi]);
                     end
                 else
                     flag1 = 1;
                 end
                 if theta2 > lower
-                    for kesai = k(lower)
-                        if abs(y(kesai) - lower) < 1e-3
-                            break;
-                        end
-                    end
+                    kesai = k1(lower);
                     if kesai > kesai2
                         bounds(4) = kesai;
+                    else
+                        bounds = cat(2, bounds, [-pi, kesai]);
                     end
                 else
                     flag2=1;
@@ -314,11 +445,7 @@ function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
                     return;
                 end
                 if theta1 < lower
-                    for kesai = k(lower)
-                        if abs(y(kesai) - lower) < 1e-3
-                            break;
-                        end
-                    end
+                    kesai = k1(lower);
                     if kesai < kesai1
                         bounds(2) = kesai;
                     else
@@ -326,11 +453,7 @@ function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
                     end
                 end
                 if theta2 > upper
-                    for kesai = k(upper)
-                        if abs(y(kesai) - upper) < 1e-3
-                            break;
-                        end
-                    end
+                    kesai = k1(upper);
                     if kesai > kesai2
                         bd_intersection(bounds, [-pi, kesai1, kesai, pi]);
                     else
@@ -340,25 +463,21 @@ function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
             else % 4
                  flag1 = 0; flag2 = 0;
                 if theta1 > lower
-                    for kesai = k(lower)
-                        if abs(y(kesai) - lower) < 1e-3
-                            break;
-                        end
-                    end
+                    kesai = k1(lower);
                     if kesai < kesai1
                         bounds(1) = kesai;
+                    else
+                        bounds = cat(2, bounds, [kesai, pi]);
                     end
                 else
                     flag1 = 1;
                 end
                 if theta2 < upper
-                    for kesai = k(upper)
-                        if abs(y(kesai) - upper) < 1e-3
-                            break;
-                        end
-                    end
+                    kesai = k1(upper);
                     if kesai > kesai2
                         bounds(4) = kesai;
+                    else
+                        bounds = cat(2, bounds, [-pi, kesai]);
                     end
                 else
                     flag2 = 1;
@@ -371,15 +490,17 @@ function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
                 end
             end
         end  
-    elseif delta > 0
-%           kesai1 = asin(-ct/(sqrt(at^2+bt^2))) - atan2(bt, at);
-%           kesai2 = pi - asin(-ct/(sqrt(at^2+bt^2))) - atan2(bt, at);
-        if bt ~= ct
+    elseif delta_n > 0
+        if bt == ct
+            kesai1 = 0;
+            kesai2 = pi;
+        else
             kesai1 = 2*atan((at + sqrt(delta)) / (bt - ct));
             kesai2 = 2*atan((at - sqrt(delta)) / (bt - ct));
-        else
-            error('bt == ct!!!');
         end
+%       kesai1 = asin(-ct/(sqrt(at^2+bt^2))) - atan2(bt, at);
+%       kesai2 = pi - asin(-ct/(sqrt(at^2+bt^2))) - atan2(bt, at);
+
         if at*cos(kesai1)-bt*sin(kesai1) < 0 % local maxmia
             tem = kesai2;
             kesai2 = kesai1;
@@ -388,13 +509,22 @@ function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
         % now kesai1: local minima, kesai2: local maxmia
         y1 = y(kesai1);
         y2 = y(kesai2);
+        if abs(y1-y2) < 1e-9 % constant
+            if upper >= y1 && lower <= y1
+                bounds = [-pi, pi];
+                return;
+            else
+                bounds=[];
+                return;
+            end
+        end
         if y1 < y2 % no jump
             bounds = [-pi, pi];
             if lower >= y2
                 bounds = [];
                 return;
             elseif lower < y2 && lower > y1
-                kesai = k(lower);
+                kesai = k2(lower);
                 if d(kesai(1)) < 0
                     bounds = [-pi, kesai(1), kesai(2), pi];
                 else
@@ -405,7 +535,7 @@ function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
                 bounds = [];
                 return;
             elseif upper < y2 && upper > y1
-                kesai = k(upper);
+                kesai = k2(upper);
                 if d(kesai(1)) < 0
                     bounds = bd_intersection(bounds, [kesai(1), kesai(2)]);
                 else
@@ -416,94 +546,73 @@ function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper)
             bounds =[];
             if kesai1 < kesai2
                 if y1 < upper
-                    kesai = k(upper);
+                    kesai = k2(upper);
                     if kesai(1) > kesai1
-                        bounds = [-pi, kesai(1)];
+                        bounds = [-pi, kesai(1), kesai(2), pi];
                     else
                         bounds = [kesai(1), kesai(2)];
                     end
                 end
                 if y2 > lower
-                    kesai = k(lower);
+                    kesai = k2(lower);
                     if kesai(2) < kesai2
-                        bounds(3:4) = [kesai(2), pi];
+                        bounds = cat(2, bounds,[-pi, kesai(1), kesai(2), pi]);
                     else
-                        bounds(3:4) = [kesai(1), kesai(2)];
+                        bounds = cat(2, bounds,[kesai(1), kesai(2)]);
                     end
                 end
             else
                 if y1 < upper
-                    kesai = k(upper);
+                    kesai = k2(upper);
                     if kesai(2) < kesai1
-                        bounds = [kesai(2), pi];
+                        bounds = [-pi, kesai(1), kesai(2), pi];
                     else
                         bounds = [kesai(1), kesai(2)];
                     end
                 end
                 if y2 > lower
-                    kesai = k(lower);
+                    kesai = k2(lower);
                     if kesai(1) > kesai2
-                        bounds(3:4) = [-pi, kesai(1)];
+                        bounds = cat(2, bounds,[-pi, kesai(1), kesai(2), pi]);
                     else
-                        bounds(3:4) = [kesai(1), kesai(2)];
+                        bounds = cat(2, bounds,[kesai(1), kesai(2)]);
                     end
                 end
             end
         end
-    else % delta < 0
-        for kesai = k(lower)
-             if abs(y(kesai) - lower) < 1e-3
-                 break;
-             end
-        end
-        kesai1 = kesai;
-       for kesai = k(upper)
-             if abs(y(kesai) - upper) < 1e-3
-                 break;
-             end
-       end
-        kesai2 = kesai;
-        if kesai1 > kesai2
-            tem = kesai1;
-            kesai1 = kesai2;
-            kesai2 = tem;
-        end
-        
+    else % delta_n < 0
+        [kesai1, kesai2] = reorder(k1(lower), k1(upper));
         theta = y((kesai1 + kesai2) / 2);
         if theta > lower && theta < upper % no jump
-            bounds(1) = kesai1;
-            bounds(2) = kesai2;
+            bounds = [kesai1, kesai2];
         else % with jump
-            bounds(1) = -pi;
-            bounds(2) = kesai1;
-            bounds(3) = kesai2;
-            bounds(4) = pi;
+            bounds = [-pi, kesai1, kesai2, pi];
         end
     end 
 end
 
-function kesais = anlysis_kesai(As, Bs, Cs, Aw, Bw, Cw, cfg, lower, upper)
-% bd = bd_intersection([1,3,5,8],[2,6]);
-% an = As(3,2); bn = Bs(3,2); cn = Cs(3,2);
-% ad = -As(3,1); bd = -Bs(3,1); cd = -Cs(3,1);
-kesais1 = kesai_range_pj('joint 1', As(2,3), Bs(2,3), Cs(2,3), As(1,3), Bs(1,3), Cs(1,3), cfg(1),lower(1), upper(1));% A1
-kesais3 = kesai_range_pj('joint 3', As(3,2), Bs(3,2), Cs(3,2), -As(3,1), -Bs(3,1), -Cs(3,1), cfg(1),lower(3), upper(3));% A3
-kesais5 = kesai_range_pj('joint 5',  Aw(2,3), Bw(2,3), Cw(2,3), Aw(1,3), Bw(1,3), Cw(1,3), cfg(3),lower(5), upper(5));% A1
-kesais7 = kesai_range_pj('joint 7',  Aw(3,2), Bw(3,2), Cw(3,2), -Aw(3,1), -Bw(3,1), -Cw(3,1), cfg(3),lower(7), upper(7));% A3
-kesais2 = kesai_range_hj('joint 2',  As(3,3), Bs(3,3), Cs(3,3), cfg(1),lower(2), upper(2));% A2
-kesais6 = kesai_range_hj('joint 6',  Aw(3,3), Bw(3,3), Cw(3,3), cfg(3),lower(6), upper(6));% A2
-kesais = bd_intersection(kesais1,kesais2);
-kesais = bd_intersection(kesais,kesais3);
-kesais = bd_intersection(kesais,kesais5);
-kesais = bd_intersection(kesais,kesais6);
-kesais = bd_intersection(kesais,kesais7);
-% kesai_range_hj( As(3,3), Bs(3,3), Cs(3,3), cfg(1),lower(2), upper(2));% A2
-%              u = cfg*(an*sin(kesai) + bn*cos(kesai) + cn);
-%              v = cfg*(ad*sin(kesai) + bd*cos(kesai) + cd);
-%             du = cfg*(an*cos(kesai) - bn*sin(kesai));
-%             dv = cfg*(ad*cos(kesai) - bd*sin(kesai));
-%             fenmu = u^2 + v^2;
-%    
-%             d = (at*sin(kesai) + bt*cos(kesai) + ct) / fenmu;
-%             d2 = (at*cos(kesai)-bt*sin(kesai) - d*(2*u*du + 2*v*dv))/fenmu;
+function kesais = anlysis_kesai(As, Bs, Cs, Aw, Bw, Cw, cfg, lower, upper, axis)
+kesais = [-pi, pi];
+for i = axis
+    switch i
+        case 1
+            kesai1 = kesai_range_pj('joint 1', As(2,3), Bs(2,3), Cs(2,3), As(1,3), Bs(1,3), Cs(1,3), cfg(1),lower(1), upper(1));
+            kesais = bd_intersection(kesais,kesai1);
+        case 2
+            kesais2 = kesai_range_hj('joint 2',  As(3,3), Bs(3,3), Cs(3,3), cfg(1),lower(2), upper(2));
+            kesais = bd_intersection(kesais,kesais2);
+        case 3
+            kesais3 = kesai_range_pj('joint 3', As(3,2), Bs(3,2), Cs(3,2), -As(3,1), -Bs(3,1), -Cs(3,1), cfg(1),lower(3), upper(3));
+            kesais = bd_intersection(kesais,kesais3);
+        case 5
+            kesais5 = kesai_range_pj('joint 5',  Aw(2,3), Bw(2,3), Cw(2,3), Aw(1,3), Bw(1,3), Cw(1,3), cfg(3),lower(5), upper(5));
+            kesais = bd_intersection(kesais,kesais5);
+        case 6
+            kesais6 = kesai_range_hj('joint 6',  Aw(3,3), Bw(3,3), Cw(3,3), cfg(3),lower(6), upper(6));
+            kesais = bd_intersection(kesais,kesais6);
+        case 7
+            kesais7 = kesai_range_pj('joint 7',  Aw(3,2), Bw(3,2), Cw(3,2), -Aw(3,1), -Bw(3,1), -Cw(3,1), cfg(3),lower(7), upper(7));
+            kesais = bd_intersection(kesais,kesais7);
+    end
+end
 end

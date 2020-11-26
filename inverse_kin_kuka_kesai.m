@@ -2,8 +2,8 @@ function angles = inverse_kin_kuka_kesai(R, t, cfg, kesai)
 % inverse_kin_kuka kuka med的运动学逆解,冗余信息为kesai
 % cfg signs of axis 2,4,6
 % kesai redundancy
-eps1 = 1e-6;
-eps2 = 1e-6;
+eps1 = 1e-8;
+eps2 = 1e-4;
 z = [0, 0, 1]';
 d1 = 340;
 d3 = 400;
@@ -18,11 +18,16 @@ l2_p26 = p26'*p26;
 theta3 = 0;
 theta4 = cfg(2) * acos((l2_p26 - d3*d3 - d5*d5) / (2*d3*d5));
 R34 = [cos(theta4), 0, -sin(theta4);0, 1, 0;sin(theta4), 0, cos(theta4)];
-if norm(cross(p26_hat, z)) < eps1
+if abs(abs(dot(p26_hat, z)) - 1) < eps1
     theta1 = 0;
 else
     theta1 = atan2(p26(2), p26(1));
 end
+% if norm(cross(p26_hat, z)) < eps1
+%     theta1 = 0;
+% else
+%     theta1 = atan2(p26(2), p26(1));
+% end
 phi = real(acos((d3*d3 + l2_p26 - d5*d5)/(2*d3*l_p26)));
 theta2 = atan2(sqrt(p26(1)^2 + p26(2)^2), p26(3)) + cfg(2)*phi;
 T03 = forward_kin_kuka([theta1, theta2, theta3]);
@@ -60,6 +65,6 @@ else
     theta7 = atan2(cfg(3) * (Aw(3,2) * sin(kesai) + Bw(3,2) * cos(kesai) + Cw(3,2)),...
         -cfg(3) * (Aw(3,1) * sin(kesai) + Bw(3,1) * cos(kesai) + Cw(3,1)));
 end
-angles = [theta1, theta2, theta3, theta4, theta5, theta6, theta7] / pi * 180;
+angles = [theta1, theta2, theta3, theta4, theta5, theta6, theta7];
 end
 
