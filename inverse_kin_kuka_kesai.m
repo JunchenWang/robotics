@@ -2,8 +2,8 @@ function angles = inverse_kin_kuka_kesai(R, t, cfg, kesai)
 % inverse_kin_kuka kuka med的运动学逆解,冗余信息为kesai
 % cfg signs of axis 2,4,6
 % kesai redundancy
-eps1 = 1e-8;
-eps2 = 1e-4;
+eps1 = 1e-9;
+eps2 = 1e-6;
 z = [0, 0, 1]';
 d1 = 340;
 d3 = 400;

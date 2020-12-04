@@ -1,7 +1,7 @@
 function [angles, bounds] = inverse_kin_kuka(R, t, cfg,lowers, uppers)
 % inverse_kin_kuka kuka med的运动学逆解,自动选择kesai
 % cfg signs of axis 2,4,6
-eps1 = 1e-8;%not change
+eps1 = 1e-9;%not change
 eps0 = 1e-6;%not change
 z = [0, 0, 1]';
 d1 = 340;
@@ -472,19 +472,10 @@ kesais5 = kesai_range_pj('joint 5',  Aw(2,3), Bw(2,3), Cw(2,3), Aw(1,3), Bw(1,3)
 kesais7 = kesai_range_pj('joint 7',  Aw(3,2), Bw(3,2), Cw(3,2), -Aw(3,1), -Bw(3,1), -Cw(3,1), cfg(3),lowers(7), uppers(7),kesai_s2);
 kesais567 = bd_intersection(kesais5,kesais6);
 kesais567 = bd_intersection(kesais567,kesais7);
-if isempty(kesais567)
-    if ~isempty(kesai_s2)
-        kesais=[kesai_s2,kesai_s2];
-    else
-        kesais=[];
-    end
-    return;
-else
-    kesais = bd_intersection(kesais, kesais567);
-    if isempty(kesais) && ~isempty(kesai_s2)
-        kesais=[kesai_s2,kesai_s2];
-    elseif isempty(kesais) && ~isempty(kesai_s1)
-        kesais=[kesai_s1,kesai_s1];
-    end    
+kesais = bd_intersection(kesais, kesais567);
+if isempty(kesais) && ~isempty(kesai_s2)
+    kesais=[kesai_s2,kesai_s2];
+elseif isempty(kesais) && ~isempty(kesai_s1)
+    kesais=[kesai_s1,kesai_s1];
 end
 end
