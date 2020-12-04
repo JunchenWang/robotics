@@ -98,7 +98,7 @@ function [bounds, kesai_s] = kesai_range_hj(str, a, b, c, cfg, lower, upper, eps
 y = @(kesai) kesai2theta_hj(kesai, a, b, c, cfg);
 k = @(theta) theta2kesai_hj(theta, a, b, c);
 d = @(kesai) b*sin(kesai) - a*cos(kesai); % notice sign of sin(theta)
-kesai_s=2*pi;
+kesai_s=[];
 %     x = linspace(-pi, pi, 1000);
 %     figure;
 %     plot(x, y(x));
@@ -282,7 +282,7 @@ if abs(at) == 0 && abs(bt)== 0 && abs(ct) == 0
 end
 delta = (at^2 + bt^2 - ct^2);
 delta_n = delta / (at^2 + bt^2 + ct^2);
-if abs(kesai_s)<=pi % singularity
+if ~isempty(kesai_s) % singularity
     % cal tol if delta_n larger
     if delta_n>1e-3 && bt ~= ct
         kesai1 = 2*atan((at + sqrt(delta)) / (bt - ct));
@@ -299,7 +299,7 @@ if abs(kesai_s)<=pi % singularity
     elseif kesai2>pi
         bounds = [kesai2-2*pi, kesai1];
     else
-         bounds = [-pi, kesai1, kesai2, pi];
+        bounds = [-pi, kesai1, kesai2, pi];
     end
     d1 = d(kesai1);
     %         d2 = at*sin(kesai2)+bt*cos(kesai2)+ct;
@@ -458,6 +458,9 @@ kesais3 = kesai_range_pj('joint 3', As(3,2), Bs(3,2), Cs(3,2), -As(3,1), -Bs(3,1
 kesais = bd_intersection(kesais1,kesais2);
 kesais = bd_intersection(kesais,kesais3);
 if isempty(kesais)
+    if ~isempty(kesai_s1)
+        kesais=[kesai_s1,kesai_s1];
+    end
     return;
 end
 [kesais6, kesai_s2] = kesai_range_hj('joint 6',  Aw(3,3), Bw(3,3), Cw(3,3), cfg(3),lowers(6), uppers(6),eps0);
@@ -470,9 +473,18 @@ kesais7 = kesai_range_pj('joint 7',  Aw(3,2), Bw(3,2), Cw(3,2), -Aw(3,1), -Bw(3,
 kesais567 = bd_intersection(kesais5,kesais6);
 kesais567 = bd_intersection(kesais567,kesais7);
 if isempty(kesais567)
-    kesais=[];
+    if ~isempty(kesai_s2)
+        kesais=[kesai_s2,kesai_s2];
+    else
+        kesais=[];
+    end
     return;
 else
     kesais = bd_intersection(kesais, kesais567);
+    if isempty(kesais) && ~isempty(kesai_s2)
+        kesais=[kesai_s2,kesai_s2];
+    elseif isempty(kesais) && ~isempty(kesai_s1)
+        kesais=[kesai_s1,kesai_s1];
+    end    
 end
 end

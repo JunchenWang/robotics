@@ -9,9 +9,9 @@ cnt2 = 0;
 tic;
 for i = 1 : N
     angles = round(rand(1,7).*(uppers - lowers - 0.01) + lowers + 0.005,4);
-    if abs(angles(2)) < 1e-1 || abs(angles(6)) < 1e-1
-        continue;
-    end
+%     if abs(angles(2)) < 1e-1 || abs(angles(6)) < 1e-1
+%         continue;
+%     end
 %     angles(2) = 0;
     T = forward_kin_kuka(angles);
     R = T(1:3,1:3); t = T(1:3,4);
