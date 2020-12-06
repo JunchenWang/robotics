@@ -8,16 +8,15 @@ cnt1 = 0;
 cnt2 = 0;
 tic;
 for i = 1 : N
-    angles = round(rand(1,7).*(uppers - lowers - 0.01) + lowers + 0.005,4);
+    angles = rand(1,7).*(uppers - lowers - 0.01) + lowers + 0.005;
 %     if abs(angles(2)) < 1e-1 || abs(angles(6)) < 1e-1
 %         continue;
 %     end
-%     angles(2) = 0;
     T = forward_kin_kuka(angles);
     R = T(1:3,1:3); t = T(1:3,4);
     [angles2, bds] = inverse_kin_kuka(R, t, [sign(angles(2)+eps), sign(angles(4)+eps),sign(angles(6)+eps)], lowers, uppers);
 %     angles2 = inverse_kin_kuka_kesai(R, t, [sign(angles(2)+eps), sign(angles(4)+eps),sign(angles(6)+eps)], 0);
-    if isempty(bds)
+    if isempty(angles2)
         disp('no kesai');
         cnt1 = cnt1 + 1;
         ang1(cnt1,:) = angles;

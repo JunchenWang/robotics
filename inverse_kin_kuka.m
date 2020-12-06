@@ -44,9 +44,17 @@ kesai = choose_kesai(bounds);
 theta2 = cfg(1) * real(acos(As(3,3) * sin(kesai) + Bs(3,3) * cos(kesai) + Cs(3,3)));
 if abs(theta2) < eps0
     % theta1 + theta3;
-    theta1 = atan2(As(2,1) * sin(kesai) + Bs(2,1) * cos(kesai) + Cs(2,1),...
+    theta1and3 = atan2(As(2,1) * sin(kesai) + Bs(2,1) * cos(kesai) + Cs(2,1),...
         As(1,1) * sin(kesai) + Bs(1,1) * cos(kesai) + Cs(1,1));
-    theta3 = 0;
+    bd=bd_intersection([lowers(3), uppers(3)], theta1and3+[-uppers(1), -lowers(1)]);
+    if isempty(bd)
+        angles=[];
+        bounds=[];
+        return;
+    else
+        theta3=(bd(1)+bd(2))/2;
+        theta1=theta1and3-theta3;
+    end
 else
     theta1 = atan2(cfg(1) * (As(2,3) * sin(kesai) + Bs(2,3) * cos(kesai) + Cs(2,3)),...
         cfg(1) * (As(1,3) * sin(kesai) + Bs(1,3) * cos(kesai) + Cs(1,3)));
@@ -56,9 +64,17 @@ end
 theta6 = cfg(3) * real(acos(Aw(3,3) * sin(kesai) + Bw(3,3) * cos(kesai) + Cw(3,3)));
 if abs(theta6) < eps0
     % theta5 + theta7 ;
-    theta7 = 0;
-    theta5 = atan2(Aw(2,1) * sin(kesai) + Bw(2,1) * cos(kesai) + Cw(2,1),...
+    theta5and7 = atan2(Aw(2,1) * sin(kesai) + Bw(2,1) * cos(kesai) + Cw(2,1),...
         Aw(1,1) * sin(kesai) + Bw(1,1) * cos(kesai) + Cw(1,1));
+    bd=bd_intersection([lowers(7), uppers(7)], theta5and7+[-uppers(5), -lowers(5)]);
+    if isempty(bd)
+        angles=[];
+        bounds=[];
+        return;
+    else
+        theta7=(bd(1)+bd(2))/2;
+        theta5=theta5and7-theta7;
+    end
 else
     theta5 = atan2(cfg(3) * (Aw(2,3) * sin(kesai) + Bw(2,3) * cos(kesai) + Cw(2,3)),...
         cfg(3) * (Aw(1,3) * sin(kesai) + Bw(1,3) * cos(kesai) + Cw(1,3)));
