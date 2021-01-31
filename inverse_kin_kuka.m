@@ -384,7 +384,7 @@ if ~isempty(kesai_s) % singularity
     end
 elseif delta > 0
     if bt == ct
-        kesai1 = 0;
+        kesai1 = -pi;
         kesai2 = pi;
     else
         kesai1 = 2*atan((at + sqrt(delta)) / (bt - ct));
