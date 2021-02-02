@@ -1,13 +1,14 @@
 function [angles, bounds] = inverse_kin_kuka(R, t, cfg,lowers, uppers)
 % inverse_kin_kuka kuka med的运动学逆解,自动选择kesai
 % cfg signs of axis 2,4,6
-eps1 = 1e-9;%not change
-eps0 = 1e-6;%not change
+eps1 = 1e-12;%not change
+eps0 = 1e-12;%not change
 z = [0, 0, 1]';
 d1 = 340;
 d3 = 400;
 d5 = 400;
 d7 =126;
+
 p02 = [0, 0, d1]';
 p67 = [0, 0, d7]';
 p26 = t - p02 - R * p67;
@@ -16,6 +17,7 @@ p26_hat = p26 / l_p26;
 l2_p26 = p26'*p26;
 theta3 = 0;
 theta4 = cfg(2) * real(acos((l2_p26 - d3*d3 - d5*d5) / (2*d3*d5)));
+% R34 make both shoulder and wrist a zyz spherical joint
 R34 = [cos(theta4), 0, -sin(theta4);0, 1, 0;sin(theta4), 0, cos(theta4)];
 if abs(abs(dot(p26_hat, z)) - 1) < eps1
     theta1 = 0;
@@ -41,19 +43,35 @@ if isempty(bounds)
     return;
 end
 kesai = choose_kesai(bounds);
-theta2 = cfg(1) * real(acos(As(3,3) * sin(kesai) + Bs(3,3) * cos(kesai) + Cs(3,3)));
-if abs(theta2) < eps0
-    % theta1 + theta3;
-    theta1and3 = atan2(As(2,1) * sin(kesai) + Bs(2,1) * cos(kesai) + Cs(2,1),...
-        As(1,1) * sin(kesai) + Bs(1,1) * cos(kesai) + Cs(1,1));
-    bd=bd_intersection([lowers(3), uppers(3)], theta1and3+[-uppers(1), -lowers(1)]);
-    if isempty(bd)
-        angles=[];
-        bounds=[];
-        return;
+t2 = acos(As(3,3) * sin(kesai) + Bs(3,3) * cos(kesai) + Cs(3,3));
+theta2 = cfg(1) * real(t2);
+if abs(abs(t2)-1) < eps0
+    if t2 > 0
+        % theta1 + theta3;
+        theta1and3 = atan2(As(2,1) * sin(kesai) + Bs(2,1) * cos(kesai) + Cs(2,1),...
+            As(1,1) * sin(kesai) + Bs(1,1) * cos(kesai) + Cs(1,1));
+        bd=bd_intersection([lowers(3), uppers(3)], theta1and3+[-uppers(1), -lowers(1)]);
+        if isempty(bd)
+            angles=[];
+            bounds=[];
+            return;
+        else
+            theta3=(bd(1)+bd(2))/2;
+            theta1=theta1and3-theta3;
+        end
     else
-        theta3=(bd(1)+bd(2))/2;
-        theta1=theta1and3-theta3;
+        %theta3 - theta1;
+        theta3_1 = atan2(As(1,2) * sin(kesai) + Bs(1,2) * cos(kesai) + Cs(1,2),...
+            As(2,2) * sin(kesai) + Bs(2,2) * cos(kesai) + Cs(2,2));
+        bd=bd_intersection([lowers(3), uppers(3)], theta3_1+[lowers(1), uppers(1)]);
+        if isempty(bd)
+            angles=[];
+            bounds=[];
+            return;
+        else
+            theta3=(bd(1)+bd(2))/2;
+            theta1=theta3-theta3_1;
+        end
     end
 else
     theta1 = atan2(cfg(1) * (As(2,3) * sin(kesai) + Bs(2,3) * cos(kesai) + Cs(2,3)),...
@@ -61,19 +79,35 @@ else
     theta3 = atan2(cfg(1) * (As(3,2) * sin(kesai) + Bs(3,2) * cos(kesai) + Cs(3,2)),...
         -cfg(1) * (As(3,1) * sin(kesai) + Bs(3,1) * cos(kesai) + Cs(3,1)));
 end
-theta6 = cfg(3) * real(acos(Aw(3,3) * sin(kesai) + Bw(3,3) * cos(kesai) + Cw(3,3)));
-if abs(theta6) < eps0
-    % theta5 + theta7 ;
-    theta5and7 = atan2(Aw(2,1) * sin(kesai) + Bw(2,1) * cos(kesai) + Cw(2,1),...
-        Aw(1,1) * sin(kesai) + Bw(1,1) * cos(kesai) + Cw(1,1));
-    bd=bd_intersection([lowers(7), uppers(7)], theta5and7+[-uppers(5), -lowers(5)]);
-    if isempty(bd)
-        angles=[];
-        bounds=[];
-        return;
+t6 = acos(Aw(3,3) * sin(kesai) + Bw(3,3) * cos(kesai) + Cw(3,3));
+theta6 = cfg(3) * real(t6);
+if abs(abs(t6) - 1) < eps0
+    if t6 > 0
+        % theta5 + theta7 ;
+        theta5and7 = atan2(Aw(2,1) * sin(kesai) + Bw(2,1) * cos(kesai) + Cw(2,1),...
+            Aw(1,1) * sin(kesai) + Bw(1,1) * cos(kesai) + Cw(1,1));
+        bd=bd_intersection([lowers(7), uppers(7)], theta5and7+[-uppers(5), -lowers(5)]);
+        if isempty(bd)
+            angles=[];
+            bounds=[];
+            return;
+        else
+            theta7=(bd(1)+bd(2))/2;
+            theta5=theta5and7-theta7;
+        end
     else
-        theta7=(bd(1)+bd(2))/2;
-        theta5=theta5and7-theta7;
+        % theta7 - theta5 ;
+        theta7_5 = atan2(Aw(1,2) * sin(kesai) + Bw(1,2) * cos(kesai) + Cw(1,2),...
+            Aw(2,2) * sin(kesai) + Bw(2,2) * cos(kesai) + Cw(2,2));
+        bd=bd_intersection([lowers(7), uppers(7)], theta7_5+[lowers(5), uppers(5)]);
+        if isempty(bd)
+            angles=[];
+            bounds=[];
+            return;
+        else
+            theta7=(bd(1)+bd(2))/2;
+            theta5=theta7-theta7_5;
+        end
     end
 else
     theta5 = atan2(cfg(3) * (Aw(2,3) * sin(kesai) + Bw(2,3) * cos(kesai) + Cw(2,3)),...
@@ -115,11 +149,6 @@ y = @(kesai) kesai2theta_hj(kesai, a, b, c, cfg);
 k = @(theta) theta2kesai_hj(theta, a, b, c);
 d = @(kesai) b*sin(kesai) - a*cos(kesai); % notice sign of sin(theta)
 kesai_s=[];
-%     x = linspace(-pi, pi, 1000);
-%     figure;
-%     plot(x, y(x));
-%     title(str);
-%     grid on;
 if a==0 && b==0 % a=0,b=0 theta is constant wrt. kesasi
     theta = y(0);
     if theta >= lower && theta <= upper
@@ -128,30 +157,21 @@ if a==0 && b==0 % a=0,b=0 theta is constant wrt. kesasi
         bounds = [];
     end
 else % two stationary points
-    kesai = atan(a/b);
-    theta = y(kesai);
-    if kesai > 0
-        kesai2=kesai-pi;
-    else
-        kesai2=kesai+pi;
-    end
-    theta2 = y(kesai2);
-    height = abs(theta2-theta);
-    if abs(theta) < abs(theta2) && abs(theta)<eps0
-        kesai_s = kesai;
-    elseif abs(theta2) < abs(theta) && abs(theta2)<eps0
+    kesai1 = atan2(a, b);
+    t1 = a*sin(kesai1)+b*cos(kesai1)+c;
+    theta1 = cfg*real(acos(t1));
+    kesai2 = atan2(-a,-b);
+    t2 = a*sin(kesai2)+b*cos(kesai2)+c;
+    theta2 = cfg*real(acos(t2));
+    thr1 = abs(abs(t1)-1);
+    thr2 = abs(abs(t2)-1);
+
+    if thr1 < thr2 && thr1<eps0
+        kesai_s = kesai1;
+    elseif thr2 < thr1 && abs(thr2)<eps0
         kesai_s = kesai2;
     end  
-    if height < 1e-6
-        theta = y(0);
-        if theta > lower && theta < upper
-            bounds =[-pi, pi];
-        else
-            bounds = [];
-        end
-        return;
-    end
-    [l,u] = reorder(theta, theta2);
+    [l,u] = reorder(theta1, theta2);
     if upper<=l || lower>=u
         bounds=[];
         return;
