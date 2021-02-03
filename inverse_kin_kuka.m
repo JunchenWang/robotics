@@ -150,7 +150,7 @@ k = @(theta) theta2kesai_hj(theta, a, b, c);
 d = @(kesai) b*sin(kesai) - a*cos(kesai); % notice sign of sin(theta)
 kesai_s=[];
 if a==0 && b==0 % a=0,b=0 theta is constant wrt. kesasi
-    theta = y(0);
+    theta = cfg*real(acos(c));
     if theta >= lower && theta <= upper
         bounds =[-pi, pi];
     else
@@ -168,7 +168,7 @@ else % two stationary points
 
     if thr1 < thr2 && thr1<eps0
         kesai_s = kesai1;
-    elseif thr2 < thr1 && abs(thr2)<eps0
+    elseif thr2 < thr1 && thr2<eps0
         kesai_s = kesai2;
     end  
     [l,u] = reorder(theta1, theta2);
