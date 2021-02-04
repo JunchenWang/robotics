@@ -1,7 +1,7 @@
 function [angles, bounds] = inverse_kin_kuka(R, t, cfg,lowers, uppers)
 % inverse_kin_kuka kuka med的运动学逆解,自动选择kesai
 % cfg signs of axis 2,4,6
-eps1 = 1e-12;%not change
+eps1 = 1e-15;%not change
 eps0 = 1e-12;%not change
 z = [0, 0, 1]';
 d1 = 340;
@@ -19,6 +19,7 @@ theta3 = 0;
 theta4 = cfg(2) * real(acos((l2_p26 - d3*d3 - d5*d5) / (2*d3*d5)));
 % R34 make both shoulder and wrist a zyz spherical joint
 R34 = [cos(theta4), 0, -sin(theta4);0, 1, 0;sin(theta4), 0, cos(theta4)];
+% theta1 = atan2(p26(2), p26(1));
 if abs(abs(dot(p26_hat, z)) - 1) < eps1
     theta1 = 0;
 else
@@ -149,7 +150,7 @@ y = @(kesai) kesai2theta_hj(kesai, a, b, c, cfg);
 k = @(theta) theta2kesai_hj(theta, a, b, c);
 d = @(kesai) b*sin(kesai) - a*cos(kesai); % notice sign of sin(theta)
 kesai_s=[];
-if a==0 && b==0 % a=0,b=0 theta is constant wrt. kesasi
+if a==0 && b==0  % a=0,b=0 theta is constant wrt. kesasi
     theta = cfg*real(acos(c));
     if theta >= lower && theta <= upper
         bounds =[-pi, pi];
@@ -219,8 +220,8 @@ function kesai = theta2kesai_pj_1(theta, an, bn, cn, ad, bd, cd, cfg)
 ap = (cd-bd)*tan(theta)+(bn-cn);
 bp = 2*(ad*tan(theta)-an);
 cp = (bd+cd)*tan(theta)-(bn+cn);
-if abs(ap) < eps(bp)
-    kesai = -cp/bp;
+if ap == 0
+    kesai = 2*atan(-cp/bp);
     return;
 end
 delta2 = bp^2 - 4*ap*cp;
@@ -240,8 +241,8 @@ ap = (cd-bd)*tan(theta)+(bn-cn);
 bp = 2*(ad*tan(theta)-an);
 cp = (bd+cd)*tan(theta)-(bn+cn);
 delta2 = bp^2 - 4*ap*cp;
-if abs(ap) < eps(bp)
-    kesai = -cp/bp;
+if ap == 0
+    kesai = 2*atan(-cp/bp);
     return;
 end
 kesai = [2*atan((-bp-sqrt(delta2)) / (2*ap)), 2*atan((-bp+sqrt(delta2)) / (2*ap))];
@@ -339,7 +340,7 @@ if ~isempty(kesai_s) % singularity
     end
     d1 = d(kesai1);
     %         d2 = at*sin(kesai2)+bt*cos(kesai2)+ct;
-    if (theta1-theta2)*d1 > 0
+    if (theta1-theta2)*d1 > 0 % N type 
         if upper<=l||lower>=u
             bounds = [];
             return;
@@ -370,7 +371,7 @@ if ~isempty(kesai_s) % singularity
             bd = cat(2, bdl, bdu);
         end
          bounds = bd_intersection(bounds, bd);
-    else
+    else % | type
          if upper<=u && lower>=l
             bounds = [];
             return;
@@ -403,15 +404,8 @@ if ~isempty(kesai_s) % singularity
          bounds = bd_intersection(bounds, bd);   
     end
 elseif delta > 0
-    if bt == ct
-        kesai1 = -pi;
-        kesai2 = pi;
-    else
-        kesai1 = 2*atan((at + sqrt(delta)) / (bt - ct));
-        kesai2 = 2*atan((at - sqrt(delta)) / (bt - ct));
-    end
-    %       kesai1 = asin(-ct/(sqrt(at^2+bt^2))) - atan2(bt, at);
-    %       kesai2 = pi - asin(-ct/(sqrt(at^2+bt^2))) - atan2(bt, at);
+    kesai1 = 2*atan((at + sqrt(delta)) / (bt - ct));
+    kesai2 = 2*atan((at - sqrt(delta)) / (bt - ct));
     if at*cos(kesai1)-bt*sin(kesai1) < 0 % local maxmia
         tem = kesai2;
         kesai2 = kesai1;
@@ -420,14 +414,13 @@ elseif delta > 0
     % now kesai1: local minima, kesai2: local maxmia
     y1 = y(kesai1);
     y2 = y(kesai2);
-    if abs(y1-y2) < 1e-6 % constant
+    if y1 == y2
         if upper >= y1 && lower <= y1
             bounds = [-pi, pi];
-            return;
         else
             bounds=[];
-            return;
         end
+        return;
     end
     if y1 < y2 % no jump
         bounds = [-pi, pi];
