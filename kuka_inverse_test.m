@@ -9,13 +9,16 @@ cnt2 = 0;
 tic;
 for i = 1 : N
     angles = rand(1,7).*(uppers - lowers - 0.01) + lowers + 0.005;
+%     angles = [0.713348143969816,0,0.752683006037861,1.00000000000000e-09,0.455933243838771,0.751912728461654,-2.80998666012245];
+%     angles(2) = 0;
+%     angles(4) = 0.1;
+%     angles = [-0.454076870199365,0,-0.127495629757278,1.00000000000000e-09,0.380128637223106,-6.33648735597243e-07,1.25769918465413];
 %     if abs(angles(2)) < 1e-1 || abs(angles(6)) < 1e-1
 %         continue;
 %     end
     T = forward_kin_kuka(angles);
     R = T(1:3,1:3); t = T(1:3,4);
     [angles2, bds] = inverse_kin_kuka(R, t, [sign(angles(2)+eps), sign(angles(4)+eps),sign(angles(6)+eps)], lowers, uppers);
-%     angles2 = inverse_kin_kuka_kesai(R, t, [sign(angles(2)+eps), sign(angles(4)+eps),sign(angles(6)+eps)], 0);
     if isempty(angles2)
         disp('no kesai');
         cnt1 = cnt1 + 1;
@@ -26,7 +29,7 @@ for i = 1 : N
     R2 = T2(1:3,1:3);
     t2 = T2(1:3,4);
     err = [norm(t-t2), norm((R2EulZYX(R) - R2EulZYX(R2))/pi*180)];
-    if norm(err) > 0.2
+    if norm(err) > 1
         disp(err);
         cnt2 = cnt2 + 1;
         ang2(cnt2,:) = angles;

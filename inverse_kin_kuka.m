@@ -1,7 +1,7 @@
 function [angles, bounds] = inverse_kin_kuka(R, t, cfg,lowers, uppers)
 % inverse_kin_kuka kuka med的运动学逆解,自动选择kesai
 % cfg signs of axis 2,4,6
-eps1 = 1e-15;%not change
+eps1 = 1e-12;%not change
 eps0 = 1e-12;%not change
 z = [0, 0, 1]';
 d1 = 340;
@@ -447,22 +447,28 @@ elseif delta > 0
             end
         end
     else % with jump
-        bounds =[];
-        if y1 < upper
+        bd1 = [];
+        bd2 = [];
+        if upper > y1 || upper < y2
             kesai = k2(upper);
             if (kesai(1)-kesai1)*(kesai(2)-kesai1) > 0
-                bounds = [-pi, kesai(1), kesai(2), pi];
+                bd1 = [-pi, kesai(1), kesai(2), pi];
             else
-                bounds = [kesai(1), kesai(2)];
+                bd1 = [kesai(1), kesai(2)];
             end
         end
-        if y2 > lower
+        if lower > y1 || lower < y2
             kesai = k2(lower);
             if (kesai(1)-kesai2)*(kesai(2)-kesai2) > 0
-                bounds = cat(2, bounds,[-pi, kesai(1), kesai(2), pi]);
+                bd2 = [-pi, kesai(1), kesai(2), pi];
             else
-                bounds = cat(2, bounds,[kesai(1), kesai(2)]);
+                bd2 = [kesai(1), kesai(2)];
             end
+        end
+        if lower > y1 || upper < y2
+            bounds = bd_intersection(bd1, bd2);
+        else
+            bounds = cat(2, bd1, bd2);
         end
     end
 else % delta < 0
