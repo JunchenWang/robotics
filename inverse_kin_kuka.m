@@ -348,31 +348,23 @@ if ~isempty(kesai_s) % singularity
         bounds = [-pi, kesai1, kesai2, pi];
     end
     d1 = d(kesai1);
-    %         d2 = at*sin(kesai2)+bt*cos(kesai2)+ct;
     if (theta1-theta2)*d1 > 0 % N type 
-        if upper<=l||lower>=u
-            bounds = [];
-            return;
-        end
-        if upper>=u 
+        if upper>=u || upper <= l
             kesai_u=kesai_s;
         else
             kesai_u = ks1(upper);
         end
-        if theta1>theta2
-            bdu = [-pi,kesai_u];
-        else
-            bdu = [kesai_u, pi];
-        end
-        if lower<=l 
+        if lower<=l || lower >=u
             kesai_l = kesai_s;
         else
             kesai_l = ks1(lower);  
-        end
-        if theta1<theta2
-            bdl = [-pi,kesai_l];
-        else
+        end 
+        if theta1>theta2
+            bdu = [-pi,kesai_u];
             bdl = [kesai_l, pi];
+        else
+            bdu = [kesai_u, pi];
+            bdl = [-pi,kesai_l];
         end
         if (kesai_u - kesai_l)*(theta1-theta2)>0
             bd = bd_intersection(bdu, bdl);
@@ -380,20 +372,11 @@ if ~isempty(kesai_s) % singularity
             bd = cat(2, bdl, bdu);
         end
          bounds = bd_intersection(bounds, bd);
-    else % | type
-         if upper<=u && lower>=l
-            bounds = [];
-            return;
-         end
+    else % H type
         if upper<=u && upper>=l
             kesai_u = kesai_s;
         else
             kesai_u = ks1(upper);
-        end
-        if theta1>theta2
-            bdu=[kesai_u, pi];
-        else
-            bdu=[-pi, kesai_u];
         end
         if lower>=l && lower<=u
             kesai_l = kesai_s;  
@@ -401,8 +384,10 @@ if ~isempty(kesai_s) % singularity
             kesai_l = ks1(lower);
         end
         if theta1>theta2
+            bdu=[kesai_u, pi];
             bdl=[-pi, kesai_l];
         else
+            bdu=[-pi, kesai_u];
             bdl=[kesai_l, pi];
         end
         if (kesai_u - kesai_l)*(theta1-theta2)<0
