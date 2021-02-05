@@ -246,19 +246,28 @@ if ap == 0
     return;
 end
 kesai = [2*atan((-bp-sqrt(delta2)) / (2*ap)), 2*atan((-bp+sqrt(delta2)) / (2*ap))];
-if pi - abs(kesai_s) > 1e-2
-    if abs(kesai(1)-kesai_s) > abs(kesai(2)-kesai_s)
-        kesai = kesai(1);
-    else
-        kesai = kesai(2);
-    end
+d1 = abs(kesai(1)-kesai_s);
+d2 = abs(kesai(2)-kesai_s);
+th1 = min(d1, 2*pi-d1);
+th2 = min(d2, 2*pi-d2);
+if th1 > th2
+    kesai = kesai(1);
 else
-    if abs(kesai(1)) < abs(kesai(2))
-        kesai = kesai(1);
-    else
-        kesai = kesai(2);
-    end
+    kesai = kesai(2);
 end
+% if pi - abs(kesai_s) > 1e-2
+%     if abs(kesai(1)-kesai_s) > abs(kesai(2)-kesai_s)
+%         kesai = kesai(1);
+%     else
+%         kesai = kesai(2);
+%     end
+% else
+%     if abs(kesai(1)) < abs(kesai(2))
+%         kesai = kesai(1);
+%     else
+%         kesai = kesai(2);
+%     end
+% end
 end
 
 function [kesai1, kesai2] = reorder(kesai1, kesai2)
