@@ -19,12 +19,12 @@ theta3 = 0;
 theta4 = cfg(2) * real(acos((l2_p26 - d3*d3 - d5*d5) / (2*d3*d5)));
 % R34 make both shoulder and wrist a zyz spherical joint
 R34 = [cos(theta4), 0, -sin(theta4);0, 1, 0;sin(theta4), 0, cos(theta4)];
-theta1 = atan2(p26(2), p26(1));
-% if abs(abs(dot(p26_hat, z)) - 1) < eps1
-%     theta1 = 0;
-% else
-%     theta1 = atan2(p26(2), p26(1));
-% end
+% theta1 = atan2(p26(2), p26(1));
+if abs(abs(dot(p26_hat, z)) - 1) < eps1
+    theta1 = 0;
+else
+    theta1 = atan2(p26(2), p26(1));
+end
 phi = real(acos((d3*d3 + l2_p26 - d5*d5)/(2*d3*l_p26)));
 theta2 = atan2(sqrt(p26(1)^2 + p26(2)^2), p26(3)) + cfg(2)*phi;
 T03 = forward_kin_kuka([theta1, theta2, theta3]);
@@ -167,7 +167,7 @@ else % two stationary points
     thr1 = abs(abs(t1)-1);
     thr2 = abs(abs(t2)-1);
 
-    if thr1 < thr2 && thr1<eps0
+    if thr1 < thr2 && thr1<eps0 
         kesai_s = kesai1;
     elseif thr2 < thr1 && thr2<eps0
         kesai_s = kesai2;
@@ -328,7 +328,7 @@ if abs(at) == 0 && abs(bt)== 0 && abs(ct) == 0
 end
 delta = (at^2 + bt^2 - ct^2);
 delta_n = delta / (at^2 + bt^2 + ct^2);
-if ~isempty(kesai_s) % singularity
+if ~isempty(kesai_s) && abs(delta_n) < 0.1% singularity
     % cal tol if delta_n larger
     if delta_n>1e-3 && bt ~= ct
         kesai1 = 2*atan((at + sqrt(delta)) / (bt - ct));
