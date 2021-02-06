@@ -19,12 +19,12 @@ theta3 = 0;
 theta4 = cfg(2) * real(acos((l2_p26 - d3*d3 - d5*d5) / (2*d3*d5)));
 % R34 make both shoulder and wrist a zyz spherical joint
 R34 = [cos(theta4), 0, -sin(theta4);0, 1, 0;sin(theta4), 0, cos(theta4)];
-% theta1 = atan2(p26(2), p26(1));
-if abs(abs(dot(p26_hat, z)) - 1) < eps1
-    theta1 = 0;
-else
-    theta1 = atan2(p26(2), p26(1));
-end
+theta1 = atan2(p26(2), p26(1));
+% if abs(abs(dot(p26_hat, z)) - 1) < eps1
+%     theta1 = 0;
+% else
+%     theta1 = atan2(p26(2), p26(1));
+% end
 phi = real(acos((d3*d3 + l2_p26 - d5*d5)/(2*d3*l_p26)));
 theta2 = atan2(sqrt(p26(1)^2 + p26(2)^2), p26(3)) + cfg(2)*phi;
 T03 = forward_kin_kuka([theta1, theta2, theta3]);
@@ -366,7 +366,7 @@ if ~isempty(kesai_s) % singularity
             bdu = [kesai_u, pi];
             bdl = [-pi,kesai_l];
         end
-        if (kesai_u - kesai_l)*(theta1-theta2)>0
+        if (kesai_u - kesai_l)*(theta1-theta2)>=0
             bd = bd_intersection(bdu, bdl);
         else
             bd = cat(2, bdl, bdu);
@@ -390,7 +390,7 @@ if ~isempty(kesai_s) % singularity
             bdu=[-pi, kesai_u];
             bdl=[kesai_l, pi];
         end
-        if (kesai_u - kesai_l)*(theta1-theta2)<0
+        if (kesai_u - kesai_l)*(theta1-theta2)<=0
             bd = bd_intersection(bdu, bdl);
         else
             bd = cat(2, bdl, bdu);
