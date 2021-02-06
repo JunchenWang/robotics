@@ -44,8 +44,8 @@ if isempty(bounds)
     return;
 end
 kesai = choose_kesai(bounds);
-t2 = acos(As(3,3) * sin(kesai) + Bs(3,3) * cos(kesai) + Cs(3,3));
-theta2 = cfg(1) * real(t2);
+t2 = As(3,3) * sin(kesai) + Bs(3,3) * cos(kesai) + Cs(3,3);
+theta2 = cfg(1) * real(acos(t2));
 if abs(abs(t2)-1) < eps0
     if t2 > 0
         % theta1 + theta3;
@@ -80,8 +80,8 @@ else
     theta3 = atan2(cfg(1) * (As(3,2) * sin(kesai) + Bs(3,2) * cos(kesai) + Cs(3,2)),...
         -cfg(1) * (As(3,1) * sin(kesai) + Bs(3,1) * cos(kesai) + Cs(3,1)));
 end
-t6 = acos(Aw(3,3) * sin(kesai) + Bw(3,3) * cos(kesai) + Cw(3,3));
-theta6 = cfg(3) * real(t6);
+t6 = Aw(3,3) * sin(kesai) + Bw(3,3) * cos(kesai) + Cw(3,3);
+theta6 = cfg(3) * real(acos(t6));
 if abs(abs(t6) - 1) < eps0
     if t6 > 0
         % theta5 + theta7 ;
