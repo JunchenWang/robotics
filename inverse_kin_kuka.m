@@ -347,7 +347,7 @@ if ~isempty(kesai_s) && abs(delta_n) < 0.1% singularity
             bdu = [kesai_u, pi];
             bdl = [-pi,kesai_l];
         end
-        if (kesai_u - kesai_l)*(theta1-theta2)>=0
+        if (kesai_u - kesai_l)*(theta1-theta2)>0 % not >= !!
             bd = bd_intersection(bdu, bdl);
         else
             bd = cat(2, bdl, bdu);
