@@ -255,19 +255,6 @@ if th1 > th2
 else
     kesai = kesai(2);
 end
-% if pi - abs(kesai_s) > 1e-2
-%     if abs(kesai(1)-kesai_s) > abs(kesai(2)-kesai_s)
-%         kesai = kesai(1);
-%     else
-%         kesai = kesai(2);
-%     end
-% else
-%     if abs(kesai(1)) < abs(kesai(2))
-%         kesai = kesai(1);
-%     else
-%         kesai = kesai(2);
-%     end
-% end
 end
 
 function [kesai1, kesai2] = reorder(kesai1, kesai2)
@@ -307,17 +294,11 @@ k2 = @(theta) theta2kesai_pj_2(theta, an, bn, cn, ad, bd, cd);
 k1 = @(theta) theta2kesai_pj_1(theta, an, bn, cn, ad, bd, cd, cfg);
 ks1 = @(theta) theta2kesai_pj_1_s(theta, an, bn, cn, ad, bd, cd, kesai_s);
 tol = 0.05;
-%     x = linspace(-pi, pi, 1000);
-%     figure;
-%     plot(x, y(x));
-%     title(str);
-%     grid on;
 at = cn*bd-bn*cd; %原论文有错，不带cfg
 bt = an*cd-cn*ad;
 ct = an*bd-bn*ad;
 d = @(kesai) at*sin(kesai)+bt*cos(kesai)+ct;
-%     if abs(at) < eps && abs(bt) < eps && abs(ct) < eps % theta is constant wrt. kesai
-if abs(at) == 0 && abs(bt)== 0 && abs(ct) == 0
+if at == 0 && bt== 0 && ct == 0
     theta = y(0);
     if upper >= theta && lower <= theta
         bounds = [-pi, pi];
@@ -478,33 +459,30 @@ end
 
 function kesais = anlysis_kesai(As, Bs, Cs, Aw, Bw, Cw, cfg, lowers, uppers, eps0)
 [kesais2, kesai_s1] = kesai_range_hj('joint 2',  As(3,3), Bs(3,3), Cs(3,3), cfg(1),lowers(2), uppers(2),eps0);
-if isempty(kesais2)
-    kesais=[];
-    return;
-end
 kesais1 = kesai_range_pj('joint 1', As(2,3), Bs(2,3), Cs(2,3), As(1,3), Bs(1,3), Cs(1,3), cfg(1),lowers(1), uppers(1),kesai_s1);
 kesais3 = kesai_range_pj('joint 3', As(3,2), Bs(3,2), Cs(3,2), -As(3,1), -Bs(3,1), -Cs(3,1), cfg(1),lowers(3), uppers(3),kesai_s1);
-kesais = bd_intersection(kesais1,kesais2);
-kesais = bd_intersection(kesais,kesais3);
-if isempty(kesais)
+kesais123 = bd_intersection(kesais1,kesais2);
+kesais123 = bd_intersection(kesais123,kesais3);
+if isempty(kesais123)
     if ~isempty(kesai_s1)
-        kesais=[kesai_s1,kesai_s1];
+        kesais123=[kesai_s1,kesai_s1];
+    else
+        kesais=[];
+        return;
     end
-    return;
 end
 [kesais6, kesai_s2] = kesai_range_hj('joint 6',  Aw(3,3), Bw(3,3), Cw(3,3), cfg(3),lowers(6), uppers(6),eps0);
-if isempty(kesais6)
-    kesais=[];
-    return;
-end
 kesais5 = kesai_range_pj('joint 5',  Aw(2,3), Bw(2,3), Cw(2,3), Aw(1,3), Bw(1,3), Cw(1,3), cfg(3),lowers(5), uppers(5),kesai_s2);
 kesais7 = kesai_range_pj('joint 7',  Aw(3,2), Bw(3,2), Cw(3,2), -Aw(3,1), -Bw(3,1), -Cw(3,1), cfg(3),lowers(7), uppers(7),kesai_s2);
 kesais567 = bd_intersection(kesais5,kesais6);
 kesais567 = bd_intersection(kesais567,kesais7);
-kesais = bd_intersection(kesais, kesais567);
-if isempty(kesais) && ~isempty(kesai_s2)
-    kesais=[kesai_s2,kesai_s2];
-elseif isempty(kesais) && ~isempty(kesai_s1)
-    kesais=[kesai_s1,kesai_s1];
+if isempty(kesais567)
+    if ~isempty(kesai_s2)
+        kesais567=[kesai_s2,kesai_s2];
+    else
+        kesais=[];
+        return;
+    end
 end
+kesais = bd_intersection(kesais123, kesais567);
 end
