@@ -1,16 +1,18 @@
 lowers = [-170, -120, -170, -120 ,-170, -120, -175] / 180 * pi;
 uppers = -lowers;
-N = 200000000;
+N = 100000000;
+% pts = zeros(3,N);
 % error = zeros(N,2);
 ang1 = zeros(1000,7);
 ang2 = zeros(1000,7);
 cnt1 = 0;
 cnt2 = 0;
-tic;
-testData =[0.526756493872237,0,0.653069965173961,8.51081589751945e-10,-0.321706716815647,-0.750241076913622,-0.771085798030460;0.258754323935697,0,-0.420020397410949,1.39229812635630e-08,0.400037383013643,-0.432336665761286,-0.597768238639069;0.114992634955685,0,0.124955697847293,1.01132455144690e-08,-0.251674523604297,-0.372489524561421,-0.857817011519867];
+tElapsed = 0;
 for i = 1 : N
     angles = rand(1,7).*(uppers - lowers - 0.01) + lowers + 0.005;
-%     angles(2) = 0;
+    angles(4) = 0.001;
+    angles(2) = pi/3;
+%     angles(4) = pi/4;
 %     angles=[-1.07135914965527,0,-0.408645049744729,2.76228607104089e-06,-0.211402309186136,0.0641946650033513,1.53130097832538];
 %     angles(4) = 0;
 %     angles =[0.968729859051993,0,0.981680801503348,0,-0.127953093104762,1.12977966135082,-0.473737667664585];
@@ -28,7 +30,11 @@ for i = 1 : N
 %     end
     T = forward_kin_kuka(angles);
     R = T(1:3,1:3); t = T(1:3,4);
-    [angles2, bds] = inverse_kin_kuka(R, t, [sign(angles(2)+eps), sign(angles(4)+eps),sign(angles(6)+eps)], lowers, uppers);
+%     pts(:,i) = t;
+    cfg=[sign(angles(2)+eps), sign(angles(4)+eps),sign(angles(6)+eps)];
+    tStart=tic;
+    [angles2, bds] = inverse_kin_kuka(R, t, cfg, lowers, uppers);
+    tElapsed=tElapsed+toc(tStart);
     if isempty(angles2)
         disp('no kesai');
         cnt1 = cnt1 + 1;
@@ -47,5 +53,4 @@ for i = 1 : N
 end
 ang1(cnt1+1:end,:)=[];
 ang2(cnt2+1:end,:)=[];
-toc;
 save;
