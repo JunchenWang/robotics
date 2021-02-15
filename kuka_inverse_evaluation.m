@@ -1,8 +1,13 @@
 lbr = importrobot('urdf\iiwa7\iiwa7.urdf');
-% lowers = [-170, -120, -170, -120 ,-170, -120, -175] / 180 * pi;
-% uppers = -lowers;
-R = T(1:3,1:3);
-t = T(1:3,4);
+lowers = [-170, -120, -170, -120 ,-170, -120, -175] / 180 * pi;
+uppers = -lowers;
+R = [      -0.016776, 0.275637, 0.961115;
+0.004811 ,0.961262 ,-0.275595;
+-0.999848, -0.000000,-0.017452];
+t = [779.442119, -223.501431, 415.832349]';
+cfg = [1,-1,-1];
+% R = T(1:3,1:3);
+% t = T(1:3,4);
 [angles, bounds] = inverse_kin_kuka(R, t, cfg,lowers, uppers);
 q0 = homeConfiguration(lbr);
 for i = 1 : 7

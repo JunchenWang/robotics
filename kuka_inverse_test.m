@@ -9,10 +9,14 @@ cnt1 = 0;
 cnt2 = 0;
 tElapsed = 0;
 for i = 1 : N
-    angles = rand(1,7).*(uppers - lowers - 0.01) + lowers + 0.005;
-%     angles(4) = 0.001;
+    angles = rand(1,7).*(uppers - lowers - 0.02) + lowers + 0.01;
+    if abs(angles(4)) < 0.1
+        continue;
+    end
+%     angles(4) = 0.1;
 %     angles(2) = pi/3;
 %     angles = [0, 40, 0, -50, 0, -60, 0] / 180 * pi;
+%     angles = [-0.314975724458602,1.73254319472325,1.02805718431992,0.283307704851932,2.70064517360875,-0.256078210760688,1.03034891692248];
     T = forward_kin_kuka(angles);
     R = T(1:3,1:3); t = T(1:3,4);
 %     pts(:,i) = t;

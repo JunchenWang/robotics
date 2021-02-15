@@ -1,8 +1,8 @@
-function [angles, bounds] = inverse_kin_kuka(R, t, cfg,lowers, uppers)
+function [angles, bounds, kesai] = inverse_kin_kuka(R, t, cfg,lowers, uppers)
 % inverse_kin_kuka kuka med的运动学逆解,自动选择kesai
 % cfg signs of axis 2,4,6
 eps1 = 1e-12;%not change
-eps0 = 1e-12;%not change
+eps0 = 1e-7;%not change
 z = [0, 0, 1]';
 d1 = 340;
 d3 = 400;
@@ -293,7 +293,7 @@ y = @(kesai) kesai2theta_pj(kesai, an, bn, cn, ad, bd, cd, cfg);
 k2 = @(theta) theta2kesai_pj_2(theta, an, bn, cn, ad, bd, cd);
 k1 = @(theta) theta2kesai_pj_1(theta, an, bn, cn, ad, bd, cd, cfg);
 ks1 = @(theta) theta2kesai_pj_1_s(theta, an, bn, cn, ad, bd, cd, kesai_s);
-tol = 0.05;
+tol = 0.1;
 at = cn*bd-bn*cd; %原论文有错，不带cfg
 bt = an*cd-cn*ad;
 ct = an*bd-bn*ad;
@@ -309,9 +309,9 @@ if at == 0 && bt== 0 && ct == 0
 end
 delta = (at^2 + bt^2 - ct^2);
 delta_n = delta / (at^2 + bt^2 + ct^2);
-if ~isempty(kesai_s) && abs(delta_n) < 0.1% singularity
+if ~isempty(kesai_s) % && abs(delta_n) < 0.1% singularity
     % cal tol if delta_n larger
-    if delta_n>1e-3 && bt ~= ct
+    if abs(delta_n) >1e-3 && bt ~= ct
         kesai1 = 2*atan((at + sqrt(delta)) / (bt - ct));
         kesai2 = 2*atan((at - sqrt(delta)) / (bt - ct));
         tol = max(tol,min(abs(kesai2-kesai1), 2*pi-abs(kesai2-kesai1)));
@@ -330,6 +330,12 @@ if ~isempty(kesai_s) && abs(delta_n) < 0.1% singularity
     end
     d1 = d(kesai1);
     if (theta1-theta2)*d1 > 0 % N type 
+        % this if block is not inlculded in the paper
+        % because assume upper > 0 and lower < 0
+        if upper <= l || lower >= u
+            bounds = [];
+            return;
+        end
         if upper>=u || upper <= l
             kesai_u=kesai_s;
         else
