@@ -19,7 +19,7 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "console": "integratedTerminal",
-            "preLaunchTask": "gcc-build"
+            "preLaunchTask": "gcc-build-release"
         },
         {
             "name": "Debug",
@@ -30,7 +30,7 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "console": "integratedTerminal",
+            "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\gdb.exe",
             "setupCommands": [
@@ -40,7 +40,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "gcc-build"
+            "preLaunchTask": "gcc-build-debug"
         }
     ]
 }
