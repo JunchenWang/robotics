@@ -12,6 +12,9 @@ KukaKinematics::KukaKinematics()
 	d1 = 340;
 	d3 = d5 = 400;
 	d7 = 126;
+	eps1 = 1e-12;
+	eps0 = 1e-7;
+	updateDHTable();
 }
 
 KukaKinematics::~KukaKinematics()
@@ -24,11 +27,12 @@ void KukaKinematics::setDHParameters(double _d1, double _d3, double _d5, double 
 	d3 = _d3;
 	d5 = _d5;
 	d7 = _d7;
+	updateDHTable();
 }
 
 void KukaKinematics::forwardKinematics(const double* angles, double* T)
 {
-	Map<Matrix<double, 4, 4, RowMajor>> ret(T);
+	Map<Matrix4d> ret(T);
 	ret = Matrix4d::Identity();
 	for (int i = 0; i < 7; i++)
 	{
