@@ -220,7 +220,7 @@ function kesai = theta2kesai_pj_1(theta, an, bn, cn, ad, bd, cd, cfg)
 ap = (cd-bd)*tan(theta)+(bn-cn);
 bp = 2*(ad*tan(theta)-an);
 cp = (bd+cd)*tan(theta)-(bn+cn);
-if ap == 0
+if abs(ap) < abs(bp)*1e-12
     kesai = 2*atan(-cp/bp);
     return;
 end
@@ -241,7 +241,7 @@ ap = (cd-bd)*tan(theta)+(bn-cn);
 bp = 2*(ad*tan(theta)-an);
 cp = (bd+cd)*tan(theta)-(bn+cn);
 delta2 = bp^2 - 4*ap*cp;
-if ap == 0
+if abs(ap) < abs(bp)*1e-12
     kesai = 2*atan(-cp/bp);
     return;
 end
