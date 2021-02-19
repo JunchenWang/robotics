@@ -1,6 +1,6 @@
 lowers = [-170, -120, -170, -120 ,-170, -120, -175] / 180 * pi;
 uppers = -lowers;
-N = 100000000;
+N = 10000;
 % pts = zeros(3,N);
 % error = zeros(N,2);
 ang1 = zeros(1000,7);
@@ -42,6 +42,7 @@ for i = 1 : N
         ang2(cnt2,:) = angles;
     end
 end
+disp(tElapsed);
 ang1(cnt1+1:end,:)=[];
 ang2(cnt2+1:end,:)=[];
 save;

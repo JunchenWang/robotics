@@ -34,7 +34,13 @@ KukaKinematics::KukaKinematics()
 	uppers[5] = 120;
 	uppers[6] = 175;
 
+    for(int i = 0; i < 7; i++)
+	{
+		lowers[i] *= pi / 180;
+		uppers[i] *= pi / 180;
+	}
 	default_tol = 0.1;
+	kesai = 0;
 	updateDHTable();
 }
 
@@ -70,12 +76,38 @@ void KukaKinematics::forwardKinematics(const double *angles, double *T, int n)
 	}
 }
 
-void KukaKinematics::jointLimitMapping(std::vector<double> kesai_range)
+void KukaKinematics::jointLimitMapping(std::vector<double> &kesai_range)
 {
 	Map<Matrix3d> As(mAs), Bs(mBs), Cs(mCs), Aw(mAw), Bw(mBw), Cw(mCw);
+	vector<double> kesai_range_1, kesai_range_2, kesai_range_3, kesai_range_123;
+	double kesai_s1 = kesai_range_hj(As(2, 2), Bs(2, 2), Cs(2, 2), cfg[0], lowers[1], uppers[1], kesai_range_2);
+	kesai_range_pj(As(1, 2), Bs(1, 2), Cs(1, 2), As(0, 2), Bs(0, 2), Cs(0, 2), cfg[0], lowers[0], uppers[0], kesai_s1, kesai_range_1);
+	kesai_range_pj(As(2, 1), Bs(2, 1), Cs(2, 1), -As(2, 0), -Bs(2, 0), -Cs(2, 0), cfg[0], lowers[2], uppers[2], kesai_s1, kesai_range_3);
+	range_intersection(kesai_range_1, kesai_range_2, kesai_range_3, kesai_range_123);
+	if (kesai_range_123.empty())
+	{
+		if (kesai_s1 != INT_MAX)
+			kesai_range_123.push_back(kesai_s1), kesai_range_123.push_back(kesai_s1);
+		else
+			return;
+	}
+
+	vector<double> kesai_range_5, kesai_range_6, kesai_range_7, kesai_range_567;
+	kesai_s1 = kesai_range_hj(Aw(2, 2), Bw(2, 2), Cw(2, 2), cfg[2], lowers[5], uppers[5], kesai_range_6);
+	kesai_range_pj(Aw(1, 2), Bw(1, 2), Cw(1, 2), Aw(0, 2), Bw(0, 2), Cw(0, 2), cfg[2], lowers[4], uppers[4], kesai_s1, kesai_range_5);
+	kesai_range_pj(Aw(2, 1), Bw(2, 1), Cw(2, 1), -Aw(2, 0), -Bw(2, 0), -Cw(2, 0), cfg[2], lowers[6], uppers[6], kesai_s1, kesai_range_7);
+	range_intersection(kesai_range_5, kesai_range_6, kesai_range_7, kesai_range_567);
+	if (kesai_range_567.empty())
+	{
+		if (kesai_s1 != INT_MAX)
+			kesai_range_567.push_back(kesai_s1), kesai_range_567.push_back(kesai_s1);
+		else
+			return;
+	}
+	range_intersection(kesai_range_123, kesai_range_567, kesai_range);
 }
 
-int KukaKinematics::inverseKinematics(double kesai, double *angles)
+int KukaKinematics::inverseKinematicsWithPsi(double kesai, double *angles)
 {
 	Map<Matrix3d> As(mAs), Bs(mBs), Cs(mCs), Aw(mAw), Bw(mBw), Cw(mCw);
 	double t2 = As(2, 2) * sin(kesai) + Bs(2, 2) * cos(kesai) + Cs(2, 2);
@@ -165,7 +197,14 @@ int KukaKinematics::inverseKinematics(double kesai, double *angles)
 
 int KukaKinematics::inverseKinematics(const double *T, double *angles)
 {
-	return 0;
+	angles[3] = calABCMatrix(T);
+	if (angles[3] < lowers[3] || angles[3] > uppers[3])
+		return 0;
+	vector<double> kesai_range;
+	jointLimitMapping(kesai_range);
+	if (kesai_range.empty())
+		return 0;
+	return inverseKinematicsWithPsi(choosePsi(kesai_range), angles);
 }
 
 void KukaKinematics::setCfg(int gc2, int gc4, int gc6)
@@ -173,6 +212,20 @@ void KukaKinematics::setCfg(int gc2, int gc4, int gc6)
 	cfg[0] = gc2;
 	cfg[1] = gc4;
 	cfg[2] = gc6;
+}
+
+double KukaKinematics::choosePsi(const vector<double> &kesai_range)
+{
+	double j = 0, len = kesai_range[1] - kesai_range[0];
+	for(int i = 1; i < kesai_range.size() / 2; i++)
+	{
+		if (kesai_range[2*i + 1] - kesai_range[2*i] > len)
+		{
+			len = kesai_range[2*i + 1] - kesai_range[2*i];
+			j = i;
+		}
+	}
+	return (kesai_range[2*j] + kesai_range[2*j + 1]) / 2;
 }
 
 void KukaKinematics::updateDHTable()
@@ -239,8 +292,6 @@ double KukaKinematics::kesai_range_hj(double a, double b, double c, int cfg, dou
 		double theta = cfg * acos(complex<double>{c, 0}).real();
 		if (theta >= lower && theta <= upper)
 			kesai_range.push_back(-pi), kesai_range.push_back(pi);
-		else
-			kesai_range.clear();
 	}
 	else
 	{
@@ -260,15 +311,13 @@ double KukaKinematics::kesai_range_hj(double a, double b, double c, int cfg, dou
 		double u = max(theta1, theta2);
 
 		if (upper <= l || lower >= u)
-		{
-			kesai_range.clear();
 			return kesai_s;
-		}
+
 		vector<double> bdu{-pi, pi}, bdl{-pi, pi};
+		double ks1, ks2;
 		if (upper < u)
 		{
 			bdu.clear();
-			double ks1, ks2;
 			theta2kesai_hj(upper, a, b, c, ks1, ks2);
 			if ((b * sin(ks1) - a * cos(ks1)) * upper > 0)
 			{
@@ -286,7 +335,6 @@ double KukaKinematics::kesai_range_hj(double a, double b, double c, int cfg, dou
 		if (lower > l)
 		{
 			bdl.clear();
-			double ks1, ks2;
 			theta2kesai_hj(lower, a, b, c, ks1, ks2);
 			if ((b * sin(ks1) - a * cos(ks1)) * lower > 0)
 			{
@@ -347,9 +395,8 @@ double KukaKinematics::theta2kesai_pj_1(double theta, double an, double bn, doub
 	double bp = 2 * (ad * tan(theta) - an);
 	double cp = (bd + cd) * tan(theta) - (bn + cn);
 	if (abs(ap) < abs(bp) * 1e-12)
-	{
 		return 2 * atan(-cp / bp);
-	}
+
 	double delta2 = bp * bp - 4 * ap * cp;
 	double kesai1 = 2 * atan((-bp - sqrt(delta2)) / (2 * ap));
 	double kesai2 = 2 * atan((-bp + sqrt(delta2)) / (2 * ap));
@@ -367,9 +414,8 @@ double KukaKinematics::theta2kesai_pj_1_s(double theta, double an, double bn, do
 	double bp = 2 * (ad * tan(theta) - an);
 	double cp = (bd + cd) * tan(theta) - (bn + cn);
 	if (abs(ap) < abs(bp) * 1e-12)
-	{
 		return 2 * atan(-cp / bp);
-	}
+
 	double delta2 = bp * bp - 4 * ap * cp;
 	double kesai1 = 2 * atan((-bp - sqrt(delta2)) / (2 * ap));
 	double kesai2 = 2 * atan((-bp + sqrt(delta2)) / (2 * ap));
@@ -388,10 +434,10 @@ void range_intersection(const std::vector<double> &a, const std::vector<double> 
 	for (int i = 0; i < a.size() / 2; i++)
 		for (int j = 0; j < b.size() / 2; j++)
 		{
-			if (a[2 * i + 1] < b[2 * j] || b[2 * i + 1] < a[2 * j])
+			if (a[2 * i + 1] < b[2 * j] || b[2 * j + 1] < a[2 * i])
 				continue;
-			c.push_back(max(a[2 * i], b[2 * i]));
-			c.push_back(min(a[2 * i + 1], b[2 * i + 1]));
+			c.push_back(max(a[2 * i], b[2 * j]));
+			c.push_back(min(a[2 * i + 1], b[2 * j + 1]));
 		}
 }
 
@@ -433,8 +479,9 @@ void KukaKinematics::kesai_range_pj(double an, double bn, double cn,
 	{
 		if (abs(delta_n) > 1e-3 && bt != ct)
 		{
-			double kesai1 = 2 * atan((at + sqrt(delta)) / (bt - ct));
-			double kesai2 = 2 * atan((at - sqrt(delta)) / (bt - ct));
+			complex<double> z{delta, 0};
+			complex<double> kesai1 = 2.0 * atan((at + sqrt(z)) / (bt - ct));
+			complex<double> kesai2 = 2.0 * atan((at - sqrt(z)) / (bt - ct));
 			tol = max(default_tol, min(abs(kesai2 - kesai1), 2 * pi - abs(kesai2 - kesai1)));
 		}
 		double kesai1 = kesai_s - tol;
@@ -625,4 +672,21 @@ void KukaKinematics::kesai_range_pj(double an, double bn, double cn,
 			kesai_range.push_back(kesai2), kesai_range.push_back(pi);
 		}
 	}
+}
+
+void range_intersection(const std::vector<double> &a, const std::vector<double> &b, const std::vector<double> &c, std::vector<double> &d)
+{
+	for (int i = 0; i < a.size() / 2; i++)
+		for (int j = 0; j < b.size() / 2; j++)
+			for (int k = 0; k < c.size() / 2; k++)
+			{
+				if (a[2 * i + 1] < b[2 * j] || b[2 * j + 1] < a[2 * i])
+					continue;
+				double t1 = max(a[2 * i], b[2 * j]);
+				double t2 = min(a[2 * i + 1], b[2 * j + 1]);
+				if (c[2 * k + 1] < t1 || c[2 * k] > t2)
+					continue;
+				d.push_back(max(c[2 * k], t1));
+				d.push_back(min(c[2 * k + 1], t2));
+			}
 }

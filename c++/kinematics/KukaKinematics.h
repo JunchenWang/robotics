@@ -3,6 +3,7 @@
 // matrix is in colum-major order
 #include <vector>
 
+void range_intersection(const std::vector<double> & a, const std::vector<double> & b, const std::vector<double> & c, std::vector<double> & d);
 void range_intersection(const std::vector<double> & a, const std::vector<double> & b, std::vector<double> & c);
 class KukaKinematics
 {
@@ -11,12 +12,13 @@ public:
 	~KukaKinematics();
 	void setDHParameters(double _d1, double _d3, double _d5, double _d7);
 	void forwardKinematics(const double *angles, double *T, int n);
-	void jointLimitMapping(std::vector<double> kesai_range);
-	int inverseKinematics(double kesai, double *angles);
 	int inverseKinematics(const double *T, double *angles);
-	double calABCMatrix(const double *T);
 	void setCfg(int gc2, int gc4, int gc6);
 protected:
+	double choosePsi(const std::vector<double> & kesai_range);
+	double calABCMatrix(const double *T);
+	void jointLimitMapping(std::vector<double> & kesai_range);
+	int inverseKinematicsWithPsi(double kesai, double *angles);
 	void updateDHTable();
 	double kesai_range_hj(double a, double b, double c, int cfg, double lower, double upper, std::vector<double> & kesai_range);
 	void theta2kesai_hj(double theta, double a, double b, double c, double & kesai1, double & kesai2);
@@ -39,6 +41,7 @@ private:
 	double theta[7];
 	double lowers[7];
 	double uppers[7];
+	double kesai;
 };
 
 #endif
