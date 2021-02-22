@@ -11,9 +11,10 @@ public:
 	KukaKinematics();
 	~KukaKinematics();
 	void setDHParameters(double _d1, double _d3, double _d5, double _d7);
-	void forwardKinematics(const double *angles, double *T, int n);
+	void forwardKinematics(const double *angles, double *T, int n = 7);
 	int inverseKinematics(const double *T, double *angles);
 	void setCfg(int gc2, int gc4, int gc6);
+	void genRandomPose(double *T, double *angles);
 protected:
 	double choosePsi(const std::vector<double> & kesai_range);
 	double calABCMatrix(const double *T);

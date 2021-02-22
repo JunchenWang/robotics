@@ -13,8 +13,8 @@ KukaKinematics::KukaKinematics()
 	d1 = 340;
 	d3 = d5 = 400;
 	d7 = 126;
-	eps1 = 1e-12;
-	eps0 = 1e-7;
+	eps1 = 1e-12; // singularity thershold for theta_1
+	eps0 = 1e-7;  // singularity threshold for theta_2 and 6
 	cfg[0] = 1;
 	cfg[1] = -1;
 	cfg[2] = 1;
@@ -34,7 +34,7 @@ KukaKinematics::KukaKinematics()
 	uppers[5] = 120;
 	uppers[6] = 175;
 
-    for(int i = 0; i < 7; i++)
+	for (int i = 0; i < 7; i++)
 	{
 		lowers[i] *= pi / 180;
 		uppers[i] *= pi / 180;
@@ -214,18 +214,40 @@ void KukaKinematics::setCfg(int gc2, int gc4, int gc6)
 	cfg[2] = gc6;
 }
 
+void KukaKinematics::genRandomPose(double *T, double *angles)
+{
+	double tol = 0.05;
+	double s;
+	for (int i = 0; i < 7; i++)
+	{
+		if (i == 3)
+			continue;
+		s = (double)rand() / RAND_MAX;
+		angles[i] = lowers[i] + tol + s * (uppers[i] - lowers[i] - 2 * tol);
+	}
+	s = (double)rand() / RAND_MAX;
+	if (s > 0.5)
+		angles[3] = tol + (s - 0.5) / 0.5 * (uppers[3] - 2*tol);
+	else
+		angles[3] = -tol + (s - 0.5) / 0.5 * (-lowers[3] - 2*tol);
+	cfg[0] = angles[1] > 0 ? 1 : -1;
+	cfg[1] = angles[3] > 0 ? 1 : -1;
+	cfg[2] = angles[5] > 0 ? 1 : -1;
+	forwardKinematics(angles, T);
+}
+
 double KukaKinematics::choosePsi(const vector<double> &kesai_range)
 {
 	double j = 0, len = kesai_range[1] - kesai_range[0];
-	for(int i = 1; i < kesai_range.size() / 2; i++)
+	for (int i = 1; i < kesai_range.size() / 2; i++)
 	{
-		if (kesai_range[2*i + 1] - kesai_range[2*i] > len)
+		if (kesai_range[2 * i + 1] - kesai_range[2 * i] > len)
 		{
-			len = kesai_range[2*i + 1] - kesai_range[2*i];
+			len = kesai_range[2 * i + 1] - kesai_range[2 * i];
 			j = i;
 		}
 	}
-	return (kesai_range[2*j] + kesai_range[2*j + 1]) / 2;
+	return (kesai_range[2 * j] + kesai_range[2 * j + 1]) / 2;
 }
 
 void KukaKinematics::updateDHTable()
@@ -338,15 +360,15 @@ double KukaKinematics::kesai_range_hj(double a, double b, double c, int cfg, dou
 			theta2kesai_hj(lower, a, b, c, ks1, ks2);
 			if ((b * sin(ks1) - a * cos(ks1)) * lower > 0)
 			{
+				bdl.push_back(ks1);
+				bdl.push_back(ks2);
+			}
+			else
+			{
 				bdl.push_back(-pi);
 				bdl.push_back(ks1);
 				bdl.push_back(ks2);
 				bdl.push_back(pi);
-			}
-			else
-			{
-				bdl.push_back(ks1);
-				bdl.push_back(ks2);
 			}
 		}
 		range_intersection(bdl, bdu, kesai_range);
