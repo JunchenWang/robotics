@@ -36,5 +36,5 @@ packages/
 codegen/
 *.mexw64
 *.prj
-c++/eigen-3.3.9/
+c++/eigen*/
 *.avi
