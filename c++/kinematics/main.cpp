@@ -19,7 +19,7 @@ int main()
     Vector3d euler, euler2;
     KukaKinematics kin;
     clock_t time1 = clock();
-    for(int i = 0; i < 100000000; i++)
+    for(int i = 0; i < 100000; i++)
     {
         kin.genRandomPose(T, joints);
         int ret = kin.inverseKinematics(T, angles);
