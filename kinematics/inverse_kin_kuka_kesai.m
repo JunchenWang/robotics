@@ -3,7 +3,7 @@ function angles = inverse_kin_kuka_kesai(R, t, cfg, kesai)
 % cfg signs of axis 2,4,6
 % kesai redundancy
 eps1 = 1e-12;%not change
-eps0 = 1e-12;%not change
+eps0 = 1e-7;%not change
 z = [0, 0, 1]';
 d1 = 340;
 d3 = 400;
