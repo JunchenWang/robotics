@@ -12,13 +12,13 @@ public:
 	~KukaKinematics();
 	void setDHParameters(double _d1, double _d3, double _d5, double _d7);
 	void forwardKinematics(const double *angles, double *T, int n = 7);
-	int inverseKinematics(const double *T, double *angles);
-	void setCfg(int gc2, int gc4, int gc6);
+	int inverseKinematics(int cfg[], const double *T, double *angles);
 	void genRandomPose(double *T, double *angles);
 protected:
+	void setCfg(int gc2, int gc4, int gc6);
 	double choosePsi(const std::vector<double> & kesai_range);
 	double calABCMatrix(const double *T);
-	void jointLimitMapping(std::vector<double> & kesai_range);
+	double jointLimitMapping(int cfg[], const double *T, std::vector<double> & kesai_range);
 	int inverseKinematicsWithPsi(double kesai, double *angles);
 	void updateDHTable();
 	double kesai_range_hj(double a, double b, double c, int cfg, double lower, double upper, std::vector<double> & kesai_range);

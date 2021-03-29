@@ -1,9 +1,9 @@
-x = linspace(-pi, pi, 1000);
-plot(x, y(x));
+x = linspace(-180, 180, 1000);
+plot(x, y(x/180*pi)/pi*180, 'LineWidth', 2);
 title(str);
 xlabel('\psi');
 ylabel('\theta_i');
-
+xlim([-185, 185]);
 grid on;
 % delta = (at^2 + bt^2 - ct^2);
 % delta_n = delta /(at^2 + bt^2 + ct^2);

@@ -76,8 +76,12 @@ void KukaKinematics::forwardKinematics(const double *angles, double *T, int n)
 	}
 }
 
-void KukaKinematics::jointLimitMapping(std::vector<double> &kesai_range)
+double KukaKinematics::jointLimitMapping(int cfg[], const double *T, std::vector<double> &kesai_range)
 {
+	setCfg(cfg[0], cfg[1], cfg[2]);
+	double theta4 = calABCMatrix(T);
+	if (theta4 < lowers[3] || theta4 > uppers[3])
+		return theta4;
 	Map<Matrix3d> As(mAs), Bs(mBs), Cs(mCs), Aw(mAw), Bw(mBw), Cw(mCw);
 	vector<double> kesai_range_1, kesai_range_2, kesai_range_3, kesai_range_123;
 	double kesai_s1 = kesai_range_hj(As(2, 2), Bs(2, 2), Cs(2, 2), cfg[0], lowers[1], uppers[1], kesai_range_2);
@@ -89,7 +93,7 @@ void KukaKinematics::jointLimitMapping(std::vector<double> &kesai_range)
 		if (kesai_s1 != INT_MAX)
 			kesai_range_123.push_back(kesai_s1), kesai_range_123.push_back(kesai_s1);
 		else
-			return;
+			return theta4;
 	}
 
 	vector<double> kesai_range_5, kesai_range_6, kesai_range_7, kesai_range_567;
@@ -102,9 +106,10 @@ void KukaKinematics::jointLimitMapping(std::vector<double> &kesai_range)
 		if (kesai_s1 != INT_MAX)
 			kesai_range_567.push_back(kesai_s1), kesai_range_567.push_back(kesai_s1);
 		else
-			return;
+			return theta4;
 	}
 	range_intersection(kesai_range_123, kesai_range_567, kesai_range);
+	return theta4;
 }
 
 int KukaKinematics::inverseKinematicsWithPsi(double kesai, double *angles)
@@ -195,13 +200,10 @@ int KukaKinematics::inverseKinematicsWithPsi(double kesai, double *angles)
 	return 1;
 }
 
-int KukaKinematics::inverseKinematics(const double *T, double *angles)
+int KukaKinematics::inverseKinematics(int cfg[], const double *T, double *angles)
 {
-	angles[3] = calABCMatrix(T);
-	if (angles[3] < lowers[3] || angles[3] > uppers[3])
-		return 0;
 	vector<double> kesai_range;
-	jointLimitMapping(kesai_range);
+	angles[3] = jointLimitMapping(cfg, T, kesai_range);
 	if (kesai_range.empty())
 		return 0;
 	return inverseKinematicsWithPsi(choosePsi(kesai_range), angles);
@@ -230,9 +232,6 @@ void KukaKinematics::genRandomPose(double *T, double *angles)
 		angles[3] = tol + (s - 0.5) / 0.5 * (uppers[3] - 2*tol);
 	else
 		angles[3] = -tol + (s - 0.5) / 0.5 * (-lowers[3] - 2*tol);
-	cfg[0] = angles[1] > 0 ? 1 : -1;
-	cfg[1] = angles[3] > 0 ? 1 : -1;
-	cfg[2] = angles[5] > 0 ? 1 : -1;
 	forwardKinematics(angles, T);
 }
 
