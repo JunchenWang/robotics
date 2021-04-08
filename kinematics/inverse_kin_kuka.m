@@ -1,6 +1,13 @@
 function [angles, bounds, kesai] = inverse_kin_kuka(R, t, cfg,lowers, uppers)
 % inverse_kin_kuka kuka med的运动学逆解,自动选择kesai
 % cfg signs of axis 2,4,6
+if nargin < 4
+    lowers = [-170, -120, -170, -120 ,-170, -120, -175] / 180 * pi;
+    uppers = -lowers;
+end
+bounds = [];
+angles = [];
+kesai = [];
 eps1 = 1e-12;%not change
 eps0 = 1e-7;%not change
 z = [0, 0, 1]';
@@ -16,7 +23,14 @@ l_p26 = norm(p26);
 p26_hat = p26 / l_p26;
 l2_p26 = p26'*p26;
 theta3 = 0;
-theta4 = cfg(2) * real(acos((l2_p26 - d3*d3 - d5*d5) / (2*d3*d5)));
+L = (l2_p26 - d3*d3 - d5*d5) / (2*d3*d5);
+if L > 1
+    return;
+end
+theta4 = cfg(2) * real(acos(L));
+if theta4 < lowers(4) || theta4 > uppers(4)
+    return;
+end
 % R34 make both shoulder and wrist a zyz spherical joint
 R34 = [cos(theta4), 0, -sin(theta4);0, 1, 0;sin(theta4), 0, cos(theta4)];
 % theta1 = atan2(p26(2), p26(1));
@@ -40,7 +54,6 @@ Cw = R34' * Cs' * R;
 
 bounds = anlysis_kesai(As, Bs, Cs, Aw, Bw, Cw, cfg, lowers, uppers, eps0);
 if isempty(bounds)
-    angles=[];
     return;
 end
 kesai = choose_kesai(bounds);
@@ -265,28 +278,6 @@ if kesai1 > kesai2
 end
 end
 
-function bounds = bd_intersection(bd1, bd2)
-if isempty(bd1) || isempty(bd2)
-    bounds = [];
-    return;
-end
-n1 = length(bd1)/2;
-n2 = length(bd2)/2;
-bounds = zeros(1,n1*n2);
-cnt = 0;
-for i = 1 : n1
-    for j = 1 : n2
-        a = max(bd1(2*i-1), bd2(2*j-1));
-        b = min(bd1(2*i), bd2(2*j));
-        if a<=b
-            cnt = cnt + 1;
-            bounds(2*cnt-1) = a;
-            bounds(2*cnt) = b;
-        end
-    end
-end
-bounds(2*cnt+1:end) = [];
-end
 
 function bounds = kesai_range_pj(str, an, bn, cn, ad, bd, cd, cfg, lower, upper, kesai_s)
 y = @(kesai) kesai2theta_pj(kesai, an, bn, cn, ad, bd, cd, cfg);
@@ -490,5 +481,5 @@ if isempty(kesais567)
         return;
     end
 end
-kesais = bd_intersection(kesais123, kesais567);
+kesais = bd_union(bd_intersection(kesais123, kesais567));
 end

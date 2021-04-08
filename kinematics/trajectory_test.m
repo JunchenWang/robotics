@@ -3,7 +3,7 @@ aviobj=VideoWriter('example');%新建叫example.avi的文件
 open(aviobj); %打开example.avi的文件
 framerate = 30;
 r = rateControl(framerate);
-lbr = importrobot('urdf\iiwa7\iiwa7.urdf');
+lbr = importrobot('..\urdf\iiwa7\iiwa7.urdf');
 lowers = [-170, -120, -170, -120 ,-170, -120, -175] / 180 * pi;
 uppers = -lowers;
 R0 = [0, 0, 1;0 1 0;-1 0 0];

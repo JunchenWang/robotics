@@ -39,7 +39,7 @@ for i = 1 : n
         fb = ConcatenateFrame(InverseFrame(B(:, i)), B(:, j));
         anga = norm(fa(1:3)) / pi * 180;
         angb = norm(fb(1:3)) / pi * 180;
-        if abs(anga - angb) < 1 && abs(anga) > 20 && abs(anga) < 150
+        if abs(anga - angb) < 1 && abs(anga) > 10 && abs(anga) < 150
             fA(:,cnt) = fa;
             fB(:,cnt) = fb;
             cnt = cnt + 1;

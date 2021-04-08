@@ -50,15 +50,15 @@ for n = 1:recordsCount
   A(1:3,n) =  APIreading(n,1:3)/180 * pi'   ;
   A(4:6,n) = APIreading(n,4:6);
 
-  Bn =  eul2rotm(robotReading(n,1:3),'ZYX') * B0';
-  B(1:3,n) = rotm2eul(Bn, 'ZYX')'  ;
-  B(4:6, n) = robotReading(n, 4:6) - robotReading(1, 4:6);
+%   Bn =  eul2rotm(robotReading(n,1:3),'ZYX') * B0';
+%   B(1:3,n) = rotm2eul(Bn, 'ZYX')'  ;
+%   B(4:6, n) = robotReading(n, 4:6) - robotReading(1, 4:6);
     
 end
+B = robotReading';
 
 
-
-[transformation, err] =  HandEyeCalibration(A,B,2);
+[transformation, err] =  HandEyeCalibration(B,A,1);
 
 % ndi2omegaRotm = eul2rotm(transformation(1:3,1)', 'ZYX');
 TcameraMarker= eul2tform( APIreading(1,1:3)/180 * pi,'ZYX');

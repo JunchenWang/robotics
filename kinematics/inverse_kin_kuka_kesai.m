@@ -2,6 +2,7 @@ function angles = inverse_kin_kuka_kesai(R, t, cfg, kesai)
 % inverse_kin_kuka kuka med的运动学逆解,冗余信息为kesai
 % cfg signs of axis 2,4,6
 % kesai redundancy
+angles = [];
 eps1 = 1e-12;%not change
 eps0 = 1e-7;%not change
 z = [0, 0, 1]';
@@ -17,7 +18,11 @@ l_p26 = norm(p26);
 p26_hat = p26 / l_p26;
 l2_p26 = p26'*p26;
 theta3 = 0;
-theta4 = cfg(2) * real(acos((l2_p26 - d3*d3 - d5*d5) / (2*d3*d5)));
+L = (l2_p26 - d3*d3 - d5*d5) / (2*d3*d5);
+if L > 1
+    return;
+end
+theta4 = cfg(2) * real(acos(L));
 % R34 make both shoulder and wrist a zyz spherical joint
 R34 = [cos(theta4), 0, -sin(theta4);0, 1, 0;sin(theta4), 0, cos(theta4)];
 % theta1 = atan2(p26(2), p26(1));

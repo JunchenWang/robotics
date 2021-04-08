@@ -1,4 +1,4 @@
-function flag = isInRange(psi, kesai)
+function [flag, a, b] = isInRange(psi, kesai)
 n = length(psi) / 2;
 flag = 0;
 for k = 1 : n
