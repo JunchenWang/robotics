@@ -41,7 +41,10 @@ x = cross(SW, SE_);
 x = x / norm(x);
 y = cross(SW, SE);
 y = y / norm(y);
-kesai = acos(x'*y);
+kesai = real(acos(x'*y));
+if imag(kesai) ~= 0
+    error('dfdf');
+end
 if cross(x,y)'* SW < 0
     kesai = -kesai;
 end
