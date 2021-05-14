@@ -1,7 +1,11 @@
-function angles = inverse_kin_kuka_kesai(R, t, cfg, kesai)
+function angles = inverse_kin_kuka_kesai(R, t, cfg, kesai, hint)
 % inverse_kin_kuka kuka med的运动学逆解,冗余信息为kesai
 % cfg signs of axis 2,4,6
 % kesai redundancy
+% hint last angles
+if nargin < 5
+    hint = [];
+end
 angles = [];
 eps1 = 1e-12;%not change
 eps0 = 1e-7;%not change
@@ -19,7 +23,7 @@ p26_hat = p26 / l_p26;
 l2_p26 = p26'*p26;
 theta3 = 0;
 L = (l2_p26 - d3*d3 - d5*d5) / (2*d3*d5);
-if L > 1
+if abs(L) > 1
     return;
 end
 theta4 = cfg(2) * real(acos(L));
@@ -47,17 +51,20 @@ Cw = R34' * Cs' * R;
 t2 = As(3,3) * sin(kesai) + Bs(3,3) * cos(kesai) + Cs(3,3);
 theta2 = cfg(1) * real(acos(t2));
 if abs(abs(t2)-1) < eps0
+    if isempty(hint)
+        theta1 = 0;
+    else
+        theta1 = hint(1);
+    end
     if t2 > 0
         % theta1 + theta3;
         theta1and3 = atan2(As(2,1) * sin(kesai) + Bs(2,1) * cos(kesai) + Cs(2,1),...
             As(1,1) * sin(kesai) + Bs(1,1) * cos(kesai) + Cs(1,1));
-        theta1 = 0;
         theta3=theta1and3-theta1;
     else
         %theta3 - theta1;
         theta3_1 = atan2(As(1,2) * sin(kesai) + Bs(1,2) * cos(kesai) + Cs(1,2),...
             As(2,2) * sin(kesai) + Bs(2,2) * cos(kesai) + Cs(2,2));
-        theta1 = 0;
         theta3 = theta3_1 + theta1;
     end
 else
@@ -69,17 +76,20 @@ end
 t6 = Aw(3,3) * sin(kesai) + Bw(3,3) * cos(kesai) + Cw(3,3);
 theta6 = cfg(3) * real(acos(t6));
 if abs(abs(t6) - 1) < eps0
+    if isempty(hint)
+        theta5 = 0;
+    else
+        theta5 = hint(5);
+    end
     if t6 > 0
         % theta5 + theta7 ;
         theta5and7 = atan2(Aw(2,1) * sin(kesai) + Bw(2,1) * cos(kesai) + Cw(2,1),...
             Aw(1,1) * sin(kesai) + Bw(1,1) * cos(kesai) + Cw(1,1));
-        theta5 = 0;
         theta7=theta5and7-theta5;
     else
         % theta7 - theta5 ;
         theta7_5 = atan2(Aw(1,2) * sin(kesai) + Bw(1,2) * cos(kesai) + Cw(1,2),...
             Aw(2,2) * sin(kesai) + Bw(2,2) * cos(kesai) + Cw(2,2));
-        theta5 = 0;
         theta7 = theta7_5 + theta5;
     end
 else

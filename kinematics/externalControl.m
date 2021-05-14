@@ -1,16 +1,16 @@
 function externalControl
 global u;
 u = udpport("byte");
-ptp([0,60,0,-92,0,-60,0]/180*pi);
+ptp([43,60,0,-100,40,-72,-12]/180*pi);
 % lineTo3([-450,0,0]);
 % lineTo3([0,0,-450]);
 % lineTo3([450,0,0]);
 % lineTo3([0,-450,0]);
 for i = 1 : 1
-lineTo([-450,0,0]);
-lineTo([0,-450,0]);
-lineTo([450,0,0]);
-lineTo([0,450,0]);
+lineTo2([-500,0,0]);
+lineTo2([0,-500,0]);
+lineTo2([500,0,0]);
+lineTo2([0,500,0]);
 end
  
 
@@ -24,10 +24,8 @@ end
 if isrow(t)
     t = t';
 end
-
 start = queryJoints;
 kesai = cal_kuka_kesai(start);
-cfg=[sign(start(2)),sign(start(4)),sign(start(6))];
 Ts = forward_kin_kuka(start);
 Te = Ts*[R,t;0 0 0 1];
 T = norm(t) / vel;
@@ -38,60 +36,25 @@ numSamples = round(T * Freq) + 1;
 tSamples = linspace(0,T,numSamples);
 [tforms,vel,~] = transformtraj(Ts,Te,[0 T],tSamples, 'TimeScaling', [s;sd;sdd]);
 % plot(tSamples, reshape(tforms(1,4,:),[1, numSamples]));
-oldang = [];
+oldang = start;
 for i = 1 : numSamples
-    oldkesai = kesai;
-    [~, bd, ~] = inverse_kin_kuka(tforms(1:3,1:3, i), tforms(1:3,4, i), cfg);
-%     if isempty(bd)
-%         error('no solution');
-%     end
-%     [flag, a, b] = isInRange(bd, oldkesai);
-%         if flag == 1
-%             kesai = adjust_kesai(a, b, oldkesai);
-%             angles = inverse_kin_kuka_kesai(tforms(1:3,1:3, i), tforms(1:3,4, i), cfg, kesai);
-%         end
-%      disp(kesai);
-    flag = 0;
-    if ~isempty(bd)
-        [flag, a, b] = isInRange(bd, oldkesai);
-        if flag == 1
-            kesai = adjust_kesai(a, b, oldkesai);
-            angles = inverse_kin_kuka_kesai(tforms(1:3,1:3, i), tforms(1:3,4, i), cfg, kesai);
-        end
-    end
-    if flag == 0 || (~isempty(oldang) && norm(angles-oldang)>1)
-        for cfg1 = -1 : 2 : 1
-            for cfg2 =  -1 : 2 : 1
-                for cfg3 = -1 : 2 : 1
-                    cfg = [cfg1, cfg2, cfg3];
-                    [~, bd, ~] = inverse_kin_kuka(tforms(1:3,1:3, i), tforms(1:3,4, i), cfg);
-                    [flag, a, b] = isInRange(bd, oldkesai);
-                    if flag == 1
-                        kesai = adjust_kesai(a, b, oldkesai);
-                        angles = inverse_kin_kuka_kesai(tforms(1:3,1:3, i), tforms(1:3,4, i), cfg, kesai);
-                        if ~isempty(oldang) && norm(angles-oldang)<1
-                            break;
-                        else
-                            flag = 0;
-                        end
-                    end
+    dist = 1e10;
+    angles = [];
+    for cfg1 = -1 : 2 : 1
+        for cfg2 =  -1 : 2 : 1
+            for cfg3 = -1 : 2 : 1
+                cfg = [cfg1, cfg2, cfg3];
+                ang = inverse_kin_kuka_kesai(tforms(1:3,1:3, i), tforms(1:3,4, i), cfg, kesai, oldang);
+                if ~isempty(ang) && norm(ang-oldang)<dist
+                    dist = norm(ang-oldang);
+                    angles = ang;
                 end
-                if flag == 1
-                    break;
-                end
-            end
-            if flag == 1
-                break;
             end
         end
     end
-    if flag == 0
+    if isempty(angles) || limit_check_kuka(angles)
         error('no solution');
     end
-    if limit_check_kuka(angles)
-        error('no solution');
-    end
-    disp(kesai);
     setJoints(angles);
     oldang = angles;
     waitfor(r);

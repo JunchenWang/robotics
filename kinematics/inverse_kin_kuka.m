@@ -26,7 +26,7 @@ p26_hat = p26 / l_p26;
 l2_p26 = p26'*p26;
 theta3 = 0;
 L = (l2_p26 - d3*d3 - d5*d5) / (2*d3*d5);
-if L > 1
+if abs(L) > 1
     return;
 end
 theta4 = cfg(2) * real(acos(L));
