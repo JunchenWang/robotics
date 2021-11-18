@@ -38,3 +38,14 @@ codegen/
 *.prj
 c++/eigen*/
 *.avi
+*.png
+*.bmp
+*.tif
+*.txt
+*.cpp
+*.h
+*.sln
+*.vcxproj
+*.filters
+*.orig
+*.autosave

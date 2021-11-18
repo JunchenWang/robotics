@@ -1,18 +1,122 @@
 function externalControl
 global u;
+global Ts;
+global kesai;
+global a;
+global b;
+global c;
+global d;
+global fid;
 u = udpport("byte");
-ptp([43,60,0,-100,40,-72,-12]/180*pi);
+fid = fopen('angles.txt','w');
+ptp([0, 70, 0, -80, 0, -60, 0]/180*pi);
+return;
+ptp([.3,.2,0,.4,1.5,1.6,2.1]);
+ptp([0.0000    0.2000    0.0000    0.4000    1.7941    1.5408    2.0955]);
+return;
+start = queryJoints;
+kesai = cal_kuka_kesai(start);
+Ts = forward_kin_kuka(start);
+a =0;
+b = 0;
+c =0;
+d = 0;
+RCM(0, 0, 20, 0);
+RCM(0, 0, -20, 0);
+RCM(0, 0, -20, -20);
+RCM(0, 0, -20, 20);
+RCM(50, 0, 20, 0);
+RCM(50, 0, -20, 0);
+RCM(50, 0, -20, -20);
+RCM(50, 0, -20, 20);
+RCM(0, 0, 0, 0);
+fclose(fid);
 % lineTo3([-450,0,0]);
 % lineTo3([0,0,-450]);
 % lineTo3([450,0,0]);
 % lineTo3([0,-450,0]);
-for i = 1 : 1
-lineTo2([-500,0,0]);
-lineTo2([0,-500,0]);
-lineTo2([500,0,0]);
-lineTo2([0,500,0]);
+% for i = 1 : 1
+% lineTo2([-500,0,0]);
+% lineTo2([0,-500,0]);
+% lineTo2([500,0,0]);
+% lineTo2([0,500,0]);
+% end
+% for dd = 50 : 10 : 100
+%     for aa = -30 : 5 : 30
+%         for bb = -30:5:30
+%             RCM(dd, 0, aa, bb);
+%         end
+%     end
+% end
+
+function rcm_new = RCM(nd, na, nb, nc, lvel, rvel)
+global Ts;
+global kesai;
+global a;
+global b;
+global c;
+global d;
+global fid;
+if nargin < 6
+    rvel = 20;
 end
- 
+if nargin < 5
+    lvel = 100;
+end
+
+start = queryJoints;
+% kesai = cal_kuka_kesai(start);
+% Ts = forward_kin_kuka(start);
+
+% Te = Ts*[R,t;0 0 0 1];
+dist = [nd - d, na-a, nb-b, nc-c];
+T = max(abs(dist) ./ [lvel, rvel, rvel, rvel]);
+Freq = 200;
+r = rateControl(Freq);
+numSamples = round(T * Freq) + 1;
+[s,sd,sdd] = trapveltraj([0, 1],numSamples, 'EndTime', T);
+tforms = zeros(4,4,numSamples);
+dt = d + dist(1) * s;
+at = a + dist(2) * s;
+bt = b + dist(3) * s;
+ct = c + dist(4) * s;
+for i = 1 : numSamples
+    delta = testRCM(dt(i), at(i), bt(i), ct(i));
+    tforms(:,:, i) = Ts * delta;
+end
+d = dt(end);
+a = at(end);
+b = bt(end);
+c = ct(end);
+% tSamples = linspace(0,T,numSamples);
+
+% [tforms,vel,~] = transformtraj(Ts,Te,[0 T],tSamples, 'TimeScaling', [s;sd;sdd]);
+% plot(tSamples, reshape(tforms(1,4,:),[1, numSamples]));
+oldang = start;
+for i = 1 : numSamples
+    dist = 1e10;
+    angles = [];
+    for cfg1 = -1 : 2 : 1
+        for cfg2 =  -1 : 2 : 1
+            for cfg3 = -1 : 2 : 1
+                cfg = [cfg1, cfg2, cfg3];
+                ang = inverse_kin_kuka_kesai(tforms(1:3,1:3, i), tforms(1:3,4, i), cfg, kesai, oldang);
+                if ~isempty(ang) && norm(ang-oldang)<dist
+                    dist = norm(ang-oldang);
+                    angles = ang;
+                end
+            end
+        end
+    end
+    if isempty(angles) || limit_check_kuka(angles)
+        error('no solution');
+    end
+    setJoints(angles);
+    fprintf(fid, '%.4f %.4f %.4f %.4f %.4f %.4f %.4f\n', angles);
+    oldang = angles;
+    waitfor(r);
+end
+
 
 function lineTo2(t, R, vel)
 if nargin < 3
@@ -198,25 +302,28 @@ start = queryJoints;
 wayPoints = [start',jts'];
 Freq = 200;
 r = rateControl(Freq);
-T = max((jts - start) / vel);
+T = max(abs(jts - start) / vel);
 numSamples = round(T * Freq) + 1;
 [q,qd,qdd,tSamples,pp] = trapveltraj(wayPoints,numSamples);
+
 for i = 1 : numSamples
     setJoints(q(:,i));
+    tao = inverse_dynamics(mass, inertia, A, M, ME, q(:,i), qd, qdd, F_ME)
     waitfor(r);
 end
 
 function joints = queryJoints
 global u;
-writeline(u,"query;","127.0.0.1",7755);
+% ";" 表示查询关节角
+writeline(u,"robot;","192.168.3.34",7755);
 s = readline(u);
-joints = sscanf(s,'%f;%f;%f;%f;%f;%f;%f')';
+joints = sscanf(s,'%f;%f;%f;%f;%f;%f;%f;')';
 
 function gohome
 ptp([0,0,0,0,0,0,0]);
 
 function setJoints(jt)
 global u;
-cmd = sprintf('%f;%f;%f;%f;%f;%f;%f;', jt(1), jt(2), jt(3), jt(4), jt(5)...
+cmd = sprintf('robot;%f;%f;%f;%f;%f;%f;%f;', jt(1), jt(2), jt(3), jt(4), jt(5)...
     ,jt(6), jt(7));
-writeline(u,cmd,"127.0.0.1",7755);
+writeline(u,cmd,"192.168.3.34",7755);

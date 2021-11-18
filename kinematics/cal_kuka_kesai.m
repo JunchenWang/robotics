@@ -37,14 +37,15 @@ SE_ = E_-S;
 SE_ = SE_ / norm(SE_);
 SE = E-S;
 SE = SE / norm(SE);
+if abs(abs(dot(SE, SE_)) - 1) < eps1
+    kesai = 0;
+    return;
+end
 x = cross(SW, SE_);
 x = x / norm(x);
 y = cross(SW, SE);
 y = y / norm(y);
 kesai = real(acos(x'*y));
-if imag(kesai) ~= 0
-    error('dfdf');
-end
 if cross(x,y)'* SW < 0
     kesai = -kesai;
 end

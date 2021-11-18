@@ -1,0 +1,9 @@
+function yd = manipulator_dynamics(mass, inertia, A, M, ME, tao, F_ME, t, y)
+n = length(mass);
+yd = zeros(2*n,1);
+q = y(1:n);
+qd = y(n + 1 : end);
+Jb = jacobian_matrix(A, M, ME, q);
+hqqd = gravity_velocity_torque(mass, inertia, A, M, q, qd);
+yd(1:n) = qd;
+yd(n +1 : end) = tao(t, y) - hqqd - Jb' * F_ME(t, y);
