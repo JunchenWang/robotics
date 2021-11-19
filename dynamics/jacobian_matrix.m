@@ -1,6 +1,11 @@
-function [Jb, T] = jacobian_matrix(A, M, ME, q)
+function [Jb, T] = jacobian_matrix(robot, q)
+A = robot.A;
+M = robot.M;
+ME = robot.ME;
+n = robot.dof;
 T = ME;
-for i = 7 : -1 : 1
+Jb = zeros(6, n);
+for i = n : -1 : 1
     Jb(:,i) = adjoint_T(tform_inv(T)) * A(i,:)';
     T = M(:,:,i) * exp_twist(A(i,:) * q(i)) * T;
 end

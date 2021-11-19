@@ -1,7 +1,13 @@
-function tao = inverse_dynamics(mass, inertia, A, M, ME, q, qd, qdd, F_ME)
-n = length(mass);
+function tao = inverse_dynamics(robot, q, qd, qdd, F_ME)
+mass = robot.mass;
+inertia = robot.inertia;
+A = robot.A;
+M = robot.M;
+ME = robot.ME;
+dp = robot.damp;
+n = robot.dof;
 nu0 = zeros(6, 1);
-dnu0 = [0, 0, 0, 0, 0, 9.8]';
+dnu0 = [0, 0, 0, -robot.gravity]';
 nu = zeros(6, n);
 dnu = zeros(6, n);
 tao = zeros(n, 1);
@@ -18,6 +24,6 @@ T = tform_inv(ME);
 for i = n : -1 : 1
     G = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
     F = adjoint_T(T)'* F + G * dnu(:,i) - adjoint_twist(nu(:,i))'*(G*nu(:,i));
-    tao(i) = F'*A(i,:)';
+    tao(i) = F'*A(i,:)'+ dp(i) * qd(i); % consider joint damping
     T =  exp_twist(-A(i,:)*q(i))*tform_inv(M(:,:,i));
 end
