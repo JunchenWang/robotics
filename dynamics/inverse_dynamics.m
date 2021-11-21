@@ -4,7 +4,7 @@ inertia = robot.inertia;
 A = robot.A;
 M = robot.M;
 ME = robot.ME;
-dp = robot.damp;
+jtMechanics = robot.jtMechanics;
 n = robot.dof;
 nu0 = zeros(6, 1);
 dnu0 = [0, 0, 0, -robot.gravity]';
@@ -16,14 +16,14 @@ for i = 1 : n
     Map = adjoint_T(T);
     nu(:, i) = Map * nu0 + A(i,:)'*qd(i);
     nu0 = nu(:, i);
-    dnu(:, i) = Map * dnu0 + adjoint_twist(nu0) * A(i,:)' * qd(i) + A(i,:)'*qdd(i);
+    dnu(:, i) = Map * dnu0 + adjoint_twist(nu0') * A(i,:)' * qd(i) + A(i,:)'*qdd(i);
     dnu0 = dnu(:, i);
 end
 F = F_ME;
 T = tform_inv(ME);
 for i = n : -1 : 1
     G = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
-    F = adjoint_T(T)'* F + G * dnu(:,i) - adjoint_twist(nu(:,i))'*(G*nu(:,i));
-    tao(i) = F'*A(i,:)'+ dp(i) * qd(i); % consider joint damping
+    F = adjoint_T(T)'* F + G * dnu(:,i) - adjoint_twist(nu(:,i)')'*(G*nu(:,i));
+    tao(i) = F'*A(i,:)'+ jtMechanics(i, 1) * qd(i) + jtMechanics(i, 2) * (rad2deg(q(i)) - jtMechanics(i, 3)); % consider joint mechanics
     T =  exp_twist(-A(i,:)*q(i))*tform_inv(M(:,:,i));
 end

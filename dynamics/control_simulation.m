@@ -7,12 +7,12 @@ MassMatrix = @(t, y) [eye(n), zeros(n); zeros(n), mass_matrix(robot, y(1:n))];
 
 opts = odeset('Mass',MassMatrix,'OutputFcn',@odeplot);
 y0 = zeros(2*n,1);
-y0(4) = pi / 3;
+% y0(4) = pi / 3;
 % targetJointPosition  = [pi/2 pi/3 pi/6 2*pi/3 -pi/2 -pi/3, 0];
 ptp(y0(1:n)');
 
 clear computed_torque_control_law;
-targetJointPosition  = [pi/2 pi/3 pi/6 2*pi/3 -pi/2 -pi/3, 0]';
+targetJointPosition  = [pi/2 pi/3 pi/6 2 * pi/3 -pi/2 -pi/3, 0]';
 targetJointVelocity  = zeros(n,1);
 targetJointAcceleration = zeros(n,1);
 control_target = @(t, y)computed_torque_control_law(dynamics, robot,...
@@ -22,8 +22,8 @@ control_target = @(t, y)computed_torque_control_law(dynamics, robot,...
 % time = 10;
 % tspan = linspace(0, time, freq * time);
 tspan = [0, 10];
-% [t,y] = ode45(@(t, y)dynamics(t, y, @joint_torque, @ext_wrench),tspan,y0,opts);
-[t,y] = ode45(control_target,tspan,y0,opts);
+[t,y] = ode45(@(t, y)dynamics(t, y, @joint_torque),tspan,y0,opts);
+% [t,y] = ode45(control_target,tspan,y0,opts);
 figure;
 plot(t, y(:,1:n)');
 
@@ -81,6 +81,9 @@ plot(t, y(:,1:n)');
         Freq = 200;
         %         r = rateControl(Freq);
         T = max(abs(jts - start) / vel);
+        if T == 0
+            return;
+        end
         numSamples = round(T * Freq) + 2;
         [q,qd,qdd,tSamples,~] = trapveltraj(wayPoints,numSamples,'EndTime',T);
         target_q = @(t) interp1(tSamples, q', t)';
