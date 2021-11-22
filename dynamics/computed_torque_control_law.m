@@ -6,8 +6,8 @@ if isempty(sum)
     pre_t = 0;
 end
 n = robot.dof;
-kp = 20;
-kd = 10;
+kp = 2;
+kd = 4;
 ki = 0;
 Kp = kp * eye(n);
 Kd = kd * eye(n);

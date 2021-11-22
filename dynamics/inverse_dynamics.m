@@ -24,6 +24,6 @@ T = tform_inv(ME);
 for i = n : -1 : 1
     G = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
     F = adjoint_T(T)'* F + G * dnu(:,i) - adjoint_twist(nu(:,i)')'*(G*nu(:,i));
-    tao(i) = F'*A(i,:)'+ jtMechanics(i, 1) * qd(i) + jtMechanics(i, 2) * (rad2deg(q(i)) - jtMechanics(i, 3)); % consider joint mechanics
+    tao(i) = F'*A(i,:)'+ jtMechanics(i, 1) * qd(i) + jtMechanics(i, 2) * (q(i) - jtMechanics(i, 3)); % consider joint mechanics
     T =  exp_twist(-A(i,:)*q(i))*tform_inv(M(:,:,i));
 end
