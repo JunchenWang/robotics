@@ -1,6 +1,6 @@
 function yd = motor_dynamics(t, y, u)
 R = 0.6;
-L = 0.12e-3;
+L = 0.12;
 b = 1e-1;
 K = 25.9e-3;
 J = 0.1;
