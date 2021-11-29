@@ -308,7 +308,6 @@ numSamples = round(T * Freq) + 1;
 
 for i = 1 : numSamples
     setJoints(q(:,i));
-    tao = inverse_dynamics(mass, inertia, A, M, ME, q(:,i), qd, qdd, F_ME)
     waitfor(r);
 end
 
