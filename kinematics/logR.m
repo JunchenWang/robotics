@@ -8,7 +8,7 @@ for i = 1 : n
     if abs(tr + 1) <= eps
         w(i,:) = pi / sqrt(2 * (1 + R(1,1,i))) * (R(:,1,i)' + [1 0 0]);
     else
-        theta = real(acos((tr - 1) / 2));
+        theta = real(acos(complex((tr - 1) / 2)));
         if abs(theta) > eps
             v = [R(3,2,:)-R(2,3,:), R(1,3,:)-R(3,1,:), R(2,1,:)-R(1,2,:)] / (2 * sin(theta));
             v = v / norm(v);
