@@ -1,32 +1,56 @@
 function kuka_control_simulation
 u = udpport("byte");
 robot = read_dynamics_file('F:\MICR\MICSys\dynamics.txt');
+robot2 = robot;
+robot2.mass(end) = 3.0;
+robot2.mass(6) = 2.2;
 n = robot.dof;
 if n ~= 7
     error('not kuka!');
 end
-pid = [2,0,4];
-qd = @(t) [[pi/2 pi/3 pi/6 2*pi/3 -pi/2 -pi/3 0]'; zeros(n,1); zeros(n, 1)];
+kp = 100 * [1 1 1 2 2 5 5];
+ki = 0 * ones(1, n);
+kd = 8 * ones(1, n);
+% qd = @(t) [[pi/2 pi/3 pi/6 2*pi/3 -pi/2 -pi/3 0]'; zeros(n,1); zeros(n, 1)];
+targetq = [0 83 0 -64 0 -59 0] / 180 * pi;
 % qd = @(t) [[sin(t) 0 0 cos(t) 0 0 0]'; zeros(n,1); zeros(n, 1)];
-tao = @(t, y) computed_torque_control(robot, qd, pid, t, y);
+
 % tao2 = @(t, y) zeros(n,1);
 MassMatrix = @(t, y) [eye(n), zeros(n); zeros(n), mass_matrix(robot, y(1:n))];
 opts = odeset('Mass',MassMatrix,'OutputFcn',@odeplot);
 y0 = zeros(2*n,1);
+y0(1:7) = [0 75 0 -94 0 -81 0] / 180 * pi;
 ptp(y0(1:n)');
+torque = [];
 clear computed_torque_control;
+tInterval = [0, 1];
+freq = 1000;
+N = tInterval(2) * freq + 1;
+[q,qd,qdd] = trapveltraj([y0(1:n), targetq'], N, 'EndTime', tInterval(2));
+fid = fopen('q.txt', 'w');
+fprintf(fid, '%.10f %.10f %.10f %.10f %.10f %.10f %.10f\n', q);
+fclose(fid);
+fid = fopen('qd.txt', 'w');
+fprintf(fid, '%.10f %.10f %.10f %.10f %.10f %.10f %.10f\n', qd);
+fclose(fid);
+fid = fopen('qdd.txt', 'w');
+fprintf(fid, '%.10f %.10f %.10f %.10f %.10f %.10f %.10f\n', qdd);
+fclose(fid);
+tao = @(t, y) computed_torque_control(robot2, q, qd, qdd, kp, ki, kd, freq, t, y);
 control_target = @(t, y) manipulator_dynamics(robot, tao, @ext_wrench,t, y); 
-tspan = [0, 10];
-[t,y] = ode45(control_target,tspan,y0,opts);
+[t,y] = ode45(control_target,tInterval,y0,opts);
 figure;
 plot(t, y(:,1:n)');
+figure;
+plot(torque');
     function Fext = ext_wrench(t, y)
         Fext = zeros(6,1);
     end
     function ret = odeplot(t, y, flag)
         if strcmp(flag, 'init') == 1
         elseif isempty(flag)
-            setJoints(y(1:n));
+            setJoints(y(1:n, end));
+            torque = [torque, tao(t(end), y(:,end))];
         else
         end
         ret = 0;

@@ -1,0 +1,10 @@
+function yd = twoLinkRobot_dynamics(t, y, robot, tao)
+q = y(1:2);
+qd = y(3:4);
+yd = zeros(4,1);
+yd(1:2) = qd;
+Mq = MassMatrix(robot, q);
+Cqqd = CMatrix(robot, q, qd);
+Gq = GMatrix(robot, q);
+damping = robot.b * qd;
+yd(3:4) = Mq \ (tao(t,y) - Cqqd*qd - Gq - damping);

@@ -6,4 +6,3 @@ x = zeros(m, 3);
 for i = 1 : m
     x(i, :) = [-X(2, 3, i) X(1, 3, i) -X(1, 2, i)];
 end
-
