@@ -1,4 +1,4 @@
-function Mq = mass_matrix(robot, q)
+function [Mq, J] = mass_matrix(robot, q)
 mass = robot.mass;
 inertia = robot.inertia;
 A = robot.A;
@@ -8,10 +8,11 @@ J = zeros(6, n, n);
 Mq = zeros(n, n);
 for i = 1 : n
    G = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
-   T = M(:,:,i) * exp_twist(A(i,:) * q(i));
+   T =  exp_twist(-A(i,:) * q(i)) * tform_inv(M(:,:,i));
    J(:, i, i)  = A(i,:)';
+   AdT = adjoint_T(T);
    for j = 1 : i - 1
-       A(j,:) = adjoint_T(tform_inv(T)) * A(j,:)';
+       A(j,:) = AdT * A(j,:)';
        J(:, j, i)  = A(j,:)';
    end
    Mq = Mq + J(:,:,i)'*G*J(:,:,i);

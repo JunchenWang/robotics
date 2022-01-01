@@ -49,7 +49,7 @@ plot(t, y(:,1:2)');
     end
     function setJoints(jt)
         cmd = sprintf('robot;%f;%f;', jt(1), jt(2));
-        writeline(u,cmd,"192.168.3.34",7755);
+        writeline(u,cmd,"127.0.0.1",7755);
     end
 
     function ptp(jts, vel)
@@ -70,7 +70,7 @@ plot(t, y(:,1:2)');
     end
     function joints = queryJoints
         % ";" 表示查询关节角
-        writeline(u,"robot;","192.168.3.34",7755);
+        writeline(u,"robot;","127.0.0.1",7755);
         s = readline(u);
         joints = sscanf(s,'%f;%f;')';
         joints = mod(joints + pi, 2*pi) - pi;

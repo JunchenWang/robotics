@@ -4,7 +4,7 @@ robot = twoLinkRobot;
 n = robot.dof;
 pos0 = [0, 0];
 y0 = [pos0 + rand(1,2) * 0.001, 0, 0]';
-tao = @(t, y) 0;
+tao = @(t, y) [0, 0]';
 dynamic = @(t, y) twoLinkRobot_dynamics(t, y, robot, tao);
 tspan = [0, 10];
 opts = odeset('OutputFcn',@odeplot);
@@ -25,6 +25,6 @@ plot(t, y(:,1:2)');
     end
     function setJoints(jt)
         cmd = sprintf('robot;%f;%f;', jt(1), jt(2));
-        writeline(u,cmd,"192.168.3.34",7755);
+        writeline(u,cmd,"127.0.0.1",7755);
     end
 end
