@@ -1,4 +1,4 @@
-function [Jb, T, dJb, dT] = derivative_jacobian_matrix(robot, q, qd)
+function [dJb, Jb, dT, T] = derivative_jacobian_matrix(robot, q, qd)
 A = robot.A;
 M = robot.M;
 ME = robot.ME;
