@@ -3,12 +3,20 @@ function angles =UR_inverse_kin(T, cfg, t6_ref)
 %输出8组可能的解angles，每一列为theta1-6；
 %cfg为三个1或-1，分别表示（theta1+fai）的cos值，theta5及theta3的cos正负值，顺序为1,3,5
 T60=T;
-d1=89.2;
-d4=109.3;
-d5=94.75;
-d6=82.5;
+%UR5
+% d1=89.2;
+% d4=109.3;
+% d5=94.75;
+% d6=82.5;
+% a3=425;
+% a4=392;
+% UR5e
+d1=162.5;
+d4=133.3;
+d5=99.7;
+d6=99.6;
 a3=425;
-a4=392;
+a4=392.2;
 eps0 = 1e-9;%not change
 px=d6*T60(1,3)-T60(1,4);
 py=T60(2,4)-d6*T60(2,3);
@@ -44,15 +52,3 @@ t4=sum234-t3-t2;
 t4 = mod(t4 + pi, 2*pi) - pi;
 angles=[t1,t2,t3,t4,t5,t6];
 end
-
-
-
-
-
-
-
-
-
-
-
-
