@@ -1,9 +1,9 @@
-function [angles, flag] =UR_inverse_kin_cfg(T, cfg, t6_ref)
+function angles =UR_inverse_kin_cfg(T, cfg, t6_ref)
 %输入关节6相对于基�?0的T矩阵
 %输出8组可能的解angles，每�?列为theta1-6�?
 %cfg为三�?1�?-1，分别表示（theta1+fai）的cos值，theta5及theta3的cos正负值，顺序�?1,3,5
-flag = 0;
-angles = zeros(1,6);
+% flag = 0;
+% angles = zeros(1,6);
 T60=T;
 %UR5
 % d1=89.2;
@@ -41,10 +41,10 @@ k1=d5*sin(sum234)-T60(1,4)*cos(t1)+d6*T60(1,3)*cos(t1)+d6*T60(2,3)*sin(t1)-T60(2
 k2=-d5*cos(sum234)-T60(3,4)+d6*T60(3,3)+d1;
 %t3
 L = k1^2 + k2^2;
-if sqrt(L) >= a3 + a4 + eps0
-%     error('no solution');
-    return;
-end
+% if sqrt(L) >= a3 + a4 + eps0
+% %     error('no solution');
+%     return;
+% end
 t3=cfg(2)*real(acos((L-a4^2-a3^2)/(2*a4*a3)));
 %t2
 m=a4*cos(t3)+a3;
@@ -54,5 +54,5 @@ t2=atan2((k2*m-k1*n)/(m^2+n^2),(k1*m+k2*n)/(m^2+n^2));
 t4=sum234-t3-t2;
 t4 = mod(t4 + pi, 2*pi) - pi;
 angles=[t1,t2,t3,t4,t5,t6];
-flag = 1;
+% flag = 1;
 end
