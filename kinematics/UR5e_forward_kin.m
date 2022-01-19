@@ -14,4 +14,3 @@ dh_table = [alpha(6) + delta_alpha(6), a(6) + delta_a(6), d(1) + delta_d(1), the
            alpha(4) + delta_alpha(4), a(4) + delta_a(4), d(5) + delta_d(5), theta(5) + delta_theta(5);
            alpha(5) + delta_alpha(5), a(5) + delta_a(5), d(6) + delta_d(6), theta(6) + delta_theta(6)];
  T=forward_kin_dh(dh_table);
- T(1:3,4) = 1000 * T(1:3,4); % in mm

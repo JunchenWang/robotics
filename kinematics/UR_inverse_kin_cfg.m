@@ -13,17 +13,17 @@ T60=T;
 % a3=425;
 % a4=392;
 % UR5e
-d1=162.5;
-d4=133.3;
-d5=99.7;
-d6=99.6;
-a3=425;
-a4=392.2;
+d1=0.1625;
+d4=0.1333;
+d5=0.0997;
+d6=0.0996;
+a3=0.425;
+a4=0.3922;
 eps0 = 1e-9;%not change
 px=d6*T60(1,3)-T60(1,4);
 py=T60(2,4)-d6*T60(2,3);
 %t1
-t1=atan2(-d4/sqrt( px^2+py^2 ),cfg(1)*sqrt(1-(d4^2/( px^2+py^2 )))) -atan2(py,px);
+t1=atan2(-d4/sqrt( px^2+py^2 ),cfg(1)*real(sqrt(1-(d4^2/( px^2+py^2 ))))) -atan2(py,px);
 t1 = mod(t1 + pi, 2*pi) - pi;
 %t5
 t5=cfg(3)*real(acos(T60(1,3)*sin(t1)-T60(2,3)*cos(t1)));
@@ -41,7 +41,7 @@ k1=d5*sin(sum234)-T60(1,4)*cos(t1)+d6*T60(1,3)*cos(t1)+d6*T60(2,3)*sin(t1)-T60(2
 k2=-d5*cos(sum234)-T60(3,4)+d6*T60(3,3)+d1;
 %t3
 L = k1^2 + k2^2;
-if sqrt(L) >= a3 + a4
+if sqrt(L) >= a3 + a4 + eps0
 %     error('no solution');
     return;
 end

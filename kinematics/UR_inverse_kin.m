@@ -1,18 +1,16 @@
-function [angles, flag] =UR_inverse_kin(T, ref)
+function [angles, flag] =UR_inverse_kin(robot, Td, ref)
 dist = 1e10;
 angles = zeros(1,6);
 flag = 0;
-delta_theta = [ -1.30565669838322851e-08, -0.588159115180872494, 0.826314252559053, -0.238165200723693349, -1.07362188606074938e-06, -2.93069160793579808e-07];
 for cfg1 = -1 : 2 : 1
     for cfg2 = -1 : 2 : 1
         for cfg3 = -1 : 2 : 1
             cfg = [cfg1, cfg2, cfg3];
-            [angles_cfg, flag_cfg] = UR_inverse_kin_cfg(T, cfg, ref(6) + delta_theta(6));
+            [angles_cfg, flag_cfg] = UR_inverse_kin_cfg(Td, cfg, ref(6));
             if flag_cfg == 0
                 continue;
             end
-            angles_cfg = angles_cfg - delta_theta;
-            err = norm(angles - ref);
+            err = norm(angles_cfg - ref);
             if err < dist
                 flag = 1;
                 dist = err;
@@ -20,4 +18,25 @@ for cfg1 = -1 : 2 : 1
             end
         end
     end
+end
+axang = rotm2axang(Td(1:3,1:3));
+rd = axang(1:3)' * axang(4);
+td = Td(1:3,4);
+[Jb, T] = jacobian_matrix(robot, angles);
+axang = rotm2axang(T(1:3,1:3));
+r = axang(1:3)' * axang(4);
+t = T(1:3,4);
+if flag == 1
+    cnt = 0;
+    while (norm(rd - r) > deg2rad(0.001) || norm(td - t) > 1e-4) && cnt < 5
+        Ja = analytic_jacobian_matrix(Jb, T);
+        delta = lsqminnorm(Ja, [rd;td] - [r;t]);
+        angles = angles + delta';
+        cnt = cnt + 1;
+        [Jb, T] = jacobian_matrix(robot, angles);
+        axang = rotm2axang(T(1:3,1:3));
+        r = axang(1:3)' * axang(4);
+        t = T(1:3,4);
+    end
+    disp(cnt);
 end
