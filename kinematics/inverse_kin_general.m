@@ -1,7 +1,7 @@
 function [angles, flag] = inverse_kin_general(robot, Td, ref, tol)
-% tol = [1e-4, 1e-4]
+% tol = [2e-5, 1e-4]
 fun = @(x) objFun(x, Td, robot);
-options = optimoptions('lsqnonlin','SpecifyObjectiveGradient',true,'FunctionTolerance',1e-10, 'Display','off');
+options = optimoptions('lsqnonlin','SpecifyObjectiveGradient',true,'Algorithm', 'levenberg-marquardt' ,'FunctionTolerance',1e-10, 'Display','off');
 [angles,~,residual]  = lsqnonlin(fun,ref,[],[],options);
 angles = mod(angles + pi, 2*pi) - pi;
 if norm(residual(1:3)) < tol(1) && norm(residual(4:6)) < tol(2)

@@ -23,14 +23,14 @@ eps0 = 1e-9;%not change
 px=d6*T60(1,3)-T60(1,4);
 py=T60(2,4)-d6*T60(2,3);
 %t1
-t1=atan2(-d4/sqrt( px^2+py^2 ),cfg(1)*real(sqrt(1-(d4^2/( px^2+py^2 ))))) -atan2(py,px);
+t1=atan2(-d4/sqrt( px^2+py^2 ),cfg(1)*real(sqrt(complex(1-(d4^2/( px^2+py^2 )))))) -atan2(py,px);
 t1 = mod(t1 + pi, 2*pi) - pi;
 %t5
-t5=cfg(3)*real(acos(T60(1,3)*sin(t1)-T60(2,3)*cos(t1)));
+t5=cfg(3)*real(acos(complex(T60(1,3)*sin(t1)-T60(2,3)*cos(t1))));
 %t6
 if abs(t5) <= eps0 || abs(abs(t5)-pi) <= eps0
     t6=t6_ref;
-    warning('singularity');
+%     warning('singularity');
 else
     m=T60(2,2)*cos(t1)-T60(1,2)*sin(t1);
     n=T60(2,1)*cos(t1)-T60(1,1)*sin(t1);
@@ -45,7 +45,7 @@ L = k1^2 + k2^2;
 % %     error('no solution');
 %     return;
 % end
-t3=cfg(2)*real(acos((L-a4^2-a3^2)/(2*a4*a3)));
+t3=cfg(2)*real(acos(complex((L-a4^2-a3^2)/(2*a4*a3))));
 %t2
 m=a4*cos(t3)+a3;
 n=a4*sin(t3);
