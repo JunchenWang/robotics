@@ -8,12 +8,12 @@ u = udpport("byte");
 ptp([0, 70, 0, -80, 0, -60, 0]/180*pi);
 start = queryJoints;
 kesai = cal_kuka_kesai(start);
-lineTo2(robot, [-500,0,0]);
+lineTo2(robot, [-400,0,0], axang2rotm([0,1,0,pi/2]));
 
 
 function F = Wrench(t)
-if t < 0.5
-    F = [0, 0, 0, 0, 0, 5]';
+if t < 0.6 && t > 0.3
+    F = [0, 0, 0, 0, 0, 0]';
 else
     F = zeros(6,1);
 end
@@ -46,9 +46,10 @@ data = zeros(7, numSamples);
 tSamples = linspace(0,T,numSamples);
 [tforms,vel,~] = transformtraj(Ts,Te,[0 T],tSamples, 'TimeScaling', [s;sd;sdd]);
 % plot(tSamples, reshape(tforms(1,4,:),[1, numSamples]));
+m = 0.
 M = cat(3, 0.01*eye(3), 0.01*eye(3));
 B = cat(3, 2 * eye(3), 2 * eye(3));
-K = cat(3, 100 * eye(3), 100 * eye(3));
+K = cat(3, 50 * eye(3), 50 * eye(3));
 for i = 1 : numSamples
     dist = 1e10;
     angles = [];
@@ -57,7 +58,8 @@ for i = 1 : numSamples
     pre_q = q;
     y = [q,qd]';
     f = Wrench(tSamples(i));
-    X = impedence_control(robot, tforms(:,:,i), zeros(6,1), M, B, K, y, f, dt);
+    X = impedence_control(robot, tforms(:,:,i), vel(:,i), M, B, K, y, f, dt);
+%     X = impedence_control(robot, Te, zeros(6,1), M, B, K, y, f, dt);
     for cfg1 = -1 : 2 : 1
         for cfg2 =  -1 : 2 : 1
             for cfg3 = -1 : 2 : 1
