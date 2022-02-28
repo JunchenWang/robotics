@@ -31,8 +31,6 @@ lineTo2(robot, [-400,100,0]) % axang2rotm([0,1,0,pi/2]));
     kesai = cal_kuka_kesai(start);
     Ts = forward_kin_kuka(start);
     Ts(1:3,4) = Ts(1:3,4) / 1000;
-%     Ts = forward_kin_general(robot, q); 
-
     Te = Ts*[R,t / 1000;0 0 0 1];
     T = 2;
     Freq = 500;
@@ -67,6 +65,7 @@ lineTo2(robot, [-400,100,0]) % axang2rotm([0,1,0,pi/2]));
         data(:,i) = qd';
         y = [q,qd]';
         f = Wrench(tSamples(i));
+        % note re,pe is the correction at next step!!!!
         [re, pe] = impedence_control(robot, tforms(:,:,i), vel(:,i), M, B, K, y, f, dt);
 %           X = impedence_control(robot, tforms(:,:,i), zeros(6,1), M, B, K, y, f, dt);
 %         angles = inverse_kin_kuka_kesai_near(X, kesai, q);
