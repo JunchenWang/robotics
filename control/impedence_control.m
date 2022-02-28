@@ -1,4 +1,4 @@
-function X = impedence_control(robot, Xd, Vd, M, B, K, y, f, dt)
+function [re, pe] = impedence_control(robot, Xd, Vd, M, B, K, y, f, dt)
 n = robot.dof;
 q = y(1:n);
 qd = y(n + 1 : 2 * n);
@@ -23,7 +23,7 @@ else
 end
 % disp(norm(Ar - eye(3)));
 red = Ar \ (Rd' * Vd(1:3) - Rd'*R*V(1:3));
-% red = (Rd' * Vd(1:3) - Rd'*R*V(1:3));
+% red =  V(1:3) - R'* Vd(1:3);
 pedd = M(:,:,2) \ (f(4:6) - B(:,:,2) * ped - K(:,:,2) * pe);
 redd = M(:,:,1) \ (f(1:3) - B(:,:,1) * red - K(:,:,1) * re);
 
@@ -35,8 +35,8 @@ pe = pe + dt * ped;
 red = red + dt * redd;
 re = re + dt * red;
 
-R = Rd * exp_w(re)';
-p = pd - R * pe;
-
-X = [R, p; 0, 0, 0, 1];
+% R = Rd * exp_w(re)';
+% p = pd - R * pe;
+% 
+% X = [R, p; 0, 0, 0, 1];
 
