@@ -15,7 +15,7 @@ ped = -so_w(V(1:3)) * pe + R' * Vd(4:6) - V(4:6);
 re = logR(R'*Rd)';
 
 norm_r = norm(re);
-if norm_r < 1e-8
+if norm_r < 1e-12
     Ar = eye(3);
 else
     sr = vec2skew_mat(re);

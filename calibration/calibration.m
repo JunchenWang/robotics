@@ -1,7 +1,8 @@
-fid = fopen('force.txt','r');
+function [mass, r, offset] = calibration(forceFile, poseFile)
+fid = fopen(forceFile,'r');
 force = fscanf(fid, '%f', [6, inf]);
 fclose(fid);
-fid = fopen('pose.txt','r');
+fid = fopen(poseFile,'r');
 pose = fscanf(fid, '%f', [6, inf]);
 fclose(fid);
 data = [pose', force'];

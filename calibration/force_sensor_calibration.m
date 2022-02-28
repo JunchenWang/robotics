@@ -22,12 +22,12 @@ for i = 1 : n - 1
 end
 outliers(cnt:end,:) = [];
 M(cnt:end) = [];
-plot(M);
+% plot(M);
 mass = mean(M);
 sigma = std(M);
 ind = abs(M - mass) > 3 * sigma;
 if ~isempty(ind)
-    warning('find outliers');
+%     warning('find outliers');
     outliers(ind, :) = [];
     M(ind) = [];
     m = size(outliers, 1);
@@ -61,9 +61,9 @@ end
 %     end
 % end
 r = A \ b;
-if (norm(b - A * r) / norm(b) > 0.02)
-    warning('data may be not good');
-end
+% if (norm(b - A * r) / norm(b) > 0.02)
+%     warning('data may be not good');
+% end
 cnt = 1;
 for k = 1 : m
     i = outliers(k, 1);
@@ -91,9 +91,9 @@ end
 %         cnt = cnt + 1;
 %     end
 % end
-figure;
-plot(offsets');
+% figure;
+% plot(offsets');
 offset = mean(offsets,2);
-fid = fopen('sensor_calib.txt', 'w');
-fprintf(fid, '%f ', [mass, r', offset']);
-fclose(fid);
+% fid = fopen('sensor_calib.txt', 'w');
+% fprintf(fid, '%f ', [mass, r', offset']);
+% fclose(fid);

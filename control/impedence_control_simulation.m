@@ -2,23 +2,23 @@
 function impedence_control_simulation
 
 robot = read_dynamics_file('F:\robotics\urdf\iiwa7\dynamics.txt');
+% robot = UR5e;
 u = udpport("byte");
 ptp([0, 70, 0, -80, 0, -60, 0]/180*pi);
-% lineTo2(robot, [-400,0,0], axang2rotm([0,1,0,pi/2]));
-lineTo2(robot, [-400,0,0]);
+% ptp([0, -60, 80, -100, -90, 0]/180*pi);
+
+lineTo2(robot, [-400,0,0]) % axang2rotm([0,1,0,pi/2]));
+% lineTo2(robot, [0,0,400]);
 
     function F = Wrench(t)
-    if t < 0.6 && t > 0.3
-        F = [0, 20, 0, 0, 0, 10]';
+    if t < 1.6 && t > 0.6
+        F = [0, 0, 0, 0, 10, 0]';
     else
         F = zeros(6,1);
     end
     end
 
-    function lineTo2(robot, t, R, vel)
-    if nargin < 4
-        vel = 500;
-    end
+    function lineTo2(robot, t, R)
     if nargin < 3
         R = eye(3);
     end
@@ -32,19 +32,21 @@ lineTo2(robot, [-400,0,0]);
     kesai = cal_kuka_kesai(start);
     Ts = forward_kin_kuka(start);
     Ts(1:3,4) = Ts(1:3,4) / 1000;
+%     Ts = forward_kin_general(robot, q); 
+
     Te = Ts*[R,t / 1000;0 0 0 1];
-    T = norm(t) / vel;
+    T = 2;
     Freq = 500;
     dt = 1 / Freq;
     r = rateControl(Freq);
     numSamples = round(T * Freq) + 1;
-    data = zeros(7, numSamples);
+    data = zeros(robot.dof, numSamples);
     [s,sd,sdd] = trapveltraj([0, 1],numSamples, 'EndTime', T);
     tSamples = linspace(0,T,numSamples);
     [tforms,vel,~] = transformtraj(Ts,Te,[0 T],tSamples, 'TimeScaling', [s;sd;sdd]);
     % plot(tSamples, reshape(tforms(1,4,:),[1, numSamples]));
     m = 1;
-    k = 1000;
+    k = 300;
     b = 2*sqrt(k*m);
     M = cat(3, m*eye(3), m*eye(3));
     B = cat(3, b * eye(3), b * eye(3));
@@ -52,19 +54,20 @@ lineTo2(robot, [-400,0,0]);
     for i = 1 : numSamples
         qd = (q - pre_q) / dt;
         data(:,i) = qd';
-        pre_q = q;
         y = [q,qd]';
         f = Wrench(tSamples(i));
-%         X = impedence_control(robot, tforms(:,:,i), vel(:,i), M, B, K, y, f, dt);
-            X = impedence_control(robot, Te, zeros(6,1), M, B, K, y, f, dt);
-        angles = inverse_kin_kuka_kesai_near(X, kesai, pre_q);
+        X = impedence_control(robot, tforms(:,:,i), vel(:,i), M, B, K, y, f, dt);
+%           X = impedence_control(robot, tforms(:,:,i), zeros(6,1), M, B, K, y, f, dt);
+        angles = inverse_kin_kuka_kesai_near(X, kesai, q);
+%         [angles, flag] = UR_inverse_kin_near(robot, X, pre_q);
         if isempty(angles)
             plot(data');
             error('no solution');
         end
         setJoints(angles);
+        pre_q = q;
         q = angles;
-        waitfor(r);
+%         waitfor(r);
     end
     plot(data');
     end
@@ -89,7 +92,7 @@ lineTo2(robot, [-400,0,0]);
 
     function joints = queryJoints
     % ";" 表示查询关节角
-    writeline(u,"robot;","192.168.2.191",7755);
+    writeline(u,"robot;","127.0.0.1",7755);
     s = readline(u);
     joints = sscanf(s,'%f;%f;%f;%f;%f;%f;%f;')';
     end
@@ -101,7 +104,7 @@ lineTo2(robot, [-400,0,0]);
     function setJoints(jt)
     cmd = sprintf('robot;%f;%f;%f;%f;%f;%f;%f;', jt(1), jt(2), jt(3), jt(4), jt(5)...
         ,jt(6), jt(7));
-    writeline(u,cmd,"192.168.2.191",7755);
+    writeline(u,cmd,"127.0.0.1",7755);
     end
 end
 

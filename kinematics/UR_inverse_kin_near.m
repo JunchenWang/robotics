@@ -17,7 +17,7 @@ if norm(rd-r) < norm(rd2 - r)
 else
     b = [rd2;td] - [r;t];
 end
-while (norm(b(1:3))  > 2e-5 || norm(b(4:6)) > 2e-4) && cnt < 10
+while (norm(b(1:3))  > 1e-5 || norm(b(4:6)) > 1e-4) && cnt < 10
     Ja = analytic_jacobian_matrix(Jb, T);
     delta = lsqminnorm(Ja, b);
     delta = mod(delta + pi, 2*pi) - pi;
@@ -37,5 +37,5 @@ angles = mod(angles + pi, 2*pi) - pi;
 if cnt < 10
     flag = 1;
 else
-    [angles, flag] = inverse_kin_general(robot, Td, ref, [2e-5, 2e-4]);
+    [angles, flag] = inverse_kin_general(robot, Td, ref, [1e-5, 1e-4]);
 end
