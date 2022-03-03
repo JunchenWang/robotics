@@ -1,6 +1,6 @@
 function w = logR(R)
 % rotation R -> axis angle rep
-eps = 1e-6; % do not change
+eps = 1e-7; % do not change
 n = size(R, 3);
 w = zeros(n, 3);
 for i = 1 : n

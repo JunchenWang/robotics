@@ -1,19 +1,19 @@
-function [re, pe] = impedence_control(robot, Xd, X, Vd, M, B, K, y, f, dt)
+function [re, pe] = impedence_control(robot, Xd, Vd, M, B, K, y, f, dt, re, pe)
 n = robot.dof;
 q = y(1:n);
 qd = y(n + 1 : 2 * n);
 % velocity noise
 % qd = max(qd) * randn(n,1); 
-[Jb, ~] = jacobian_matrix(robot, q);
+[Jb, X] = jacobian_matrix(robot, q);
 % disp(norm(XX - X));
 R = X(1:3,1:3);
-p = X(1:3,4);
+% p = X(1:3,4);
 Rd = Xd(1:3, 1:3);
-pd = Xd(1:3,4);
+% pd = Xd(1:3,4);
 V = Jb * qd;
-pe = R' * (pd - p);
+% pe = R' * (pd - p);
 ped = -so_w(V(1:3)) * pe + R' * Vd(4:6) - V(4:6);
-re = logR(R'*Rd)';
+% re = logR(R'*Rd)';
 
 norm_r = norm(re);
 if norm_r < 1e-12
