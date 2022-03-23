@@ -1,30 +1,31 @@
 function robot = read_dynamics_file(filename)
 fid = fopen(filename);
 n = fscanf(fid, '%f', 1);
+n = n(1);
 mass = zeros(n, 1);
 inertia = zeros(3,3,n);
 A = zeros(n, 6);
 M = zeros(4,4,n);
 jtMechanics = zeros(n, 3);
 for i = 1 : n
-    inert = fscanf(fid, '%f %f %f', [7, 1])';
+    inert = fscanf(fid, '%f', [7, 1])';
     mass(i) = inert(1);
     inertia(:,:,i) = [inert(2), inert(3), inert(4);
         inert(3), inert(5), inert(6);
         inert(4), inert(6), inert(7)];
-    qt = fscanf(fid, '%f %f %f %f %f %f', [7, 1])';
+    qt = fscanf(fid, '%f', [7, 1])';
     M(:,:,i) = make_tform_qt(qt);
-    A(i, :) = fscanf(fid, '%f %f %f %f %f %f', [6, 1]);
-    jtMechanics(i,:) = fscanf(fid, '%f %f %f', [3, 1]);
+    A(i, :) = fscanf(fid, '%f', [6, 1]);
+    jtMechanics(i,:) = fscanf(fid, '%f', [3, 1]);
 end
-inert = fscanf(fid, '%f %f %f', [7, 1])';
+inert = fscanf(fid, '%f', [7, 1])';
 if ~isempty(inert)
     m_e = inert(1);
     I_e = [inert(2), inert(3), inert(4);
         inert(3), inert(5), inert(6);
         inert(4), inert(6), inert(7)];
-    T = make_tform_qt(fscanf(fid, '%f %f %f %f %f %f', [7, 1])');
-    ME = make_tform_qt(fscanf(fid, '%f %f %f %f %f %f', [7, 1])');
+    T = make_tform_qt(fscanf(fid, '%f', [7, 1])');
+    ME = make_tform_qt(fscanf(fid, '%f', [7, 1])');
     [I, T] = composite_inertia_matrix(inertia(:,:,n), mass(n), I_e, m_e, T);
     inertia(:,:,n) = I;
     M(:,:,n) =  M(:,:,n) * T;

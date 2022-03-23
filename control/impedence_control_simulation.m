@@ -11,7 +11,7 @@ lineTo2(robot, [-500,0,0]) % axang2rotm([0,1,0,pi/2]));
 
     function F = Wrench(t)
     if t < 3 && t > 1
-        F = [0, 0, 0, 0, 10, 0]';
+        F = [0, 0, 0, 0, 0, 0]';
     else
         F = zeros(6,1);
     end
@@ -69,7 +69,8 @@ lineTo2(robot, [-500,0,0]) % axang2rotm([0,1,0,pi/2]));
         y = [q,qd]';
         f = Wrench(tSamples(i));
         % note re,pe is the correction at next step!!!!
-        [re, pe] = impedence_control(robot, tforms(:,:,i), vel(:,i), M, B, K, y, f, dt, re, pe);
+        [re, pe] = impedence_control(robot, tforms(:,:,i), vel(:,i), M(:,:,1), B(:,:,1), K(:,:,1),...
+                                     M(:,:,2), B(:,:,2), K(:,:,2), y, f, dt, re, pe);
 %           [re, pe] = impedence_control(robot, Te, zeros(6,1), M, B, K, y, f, dt, re, pe);
 %         angles = inverse_kin_kuka_kesai_near(X, kesai, q);
 %         [angles, flag] = UR_inverse_kin_near(robot, X, pre_q);

@@ -1,28 +1,44 @@
 function [angles, flag] = inverse_kin_general(robot, Td, ref, tol)
-% tol = [2e-5, 1e-4]
-fun = @(x) objFun(x, Td, robot);
-options = optimoptions('lsqnonlin','SpecifyObjectiveGradient',true,'Algorithm', 'levenberg-marquardt' ,'FunctionTolerance',1e-10, 'Display','off');
-[angles,~,residual]  = lsqnonlin(fun,ref,[],[],options);
+% test: q = [0.1328   -1.6864   -0.0698    0.7795    1.1255   -0.6565];
+% test: q =  [-0.0635   -2.0865    3.0076    1.3364    0.0030   -0.1817];
+angles = ref;
+rd = logR(Td(1:3,1:3))';
+norm_rd = norm(rd);
+if norm_rd ~= 0
+    rd2 = (2*pi - norm_rd) * (-rd / norm_rd);
+else
+    rd2 = rd;
+end
+td = Td(1:3,4);
+[Jb, T] = jacobian_matrix(robot, angles);
+r = logR(T(1:3,1:3))';
+t = T(1:3,4);
+cnt = 0;
+if norm(rd-r) < norm(rd2 - r)
+    b = [rd;td] - [r;t];
+else
+    b = [rd2;td] - [r;t];
+end
+while (norm(b(1:3))  > tol(1) || norm(b(4:6)) > tol(2)) && cnt < 10
+%     Ja = analytic_jacobian_matrix(Jb, T);
+%     delta = lsqminnorm(Jb, [w_dr_A(r), zeros(3); zeros(3),T(1:3,1:3)'] * b);
+%     delta = Jb \ ([w_dr_A(r), zeros(3); zeros(3),T(1:3,1:3)'] * b);
+      delta = pinv(Jb) * ([w_dr_A(r), zeros(3); zeros(3),T(1:3,1:3)'] * b);
+%     delta = mod(delta + pi, 2*pi) - pi;
+    angles = angles + delta';
+    cnt = cnt + 1;
+    [Jb, T] = jacobian_matrix(robot, angles);
+    r = logR(T(1:3,1:3))';
+    t = T(1:3,4);
+    if norm(rd-r) < norm(rd2 - r)
+        b = [rd;td] - [r;t];
+    else
+        b = [rd2;td] - [r;t];
+    end
+end
 angles = mod(angles + pi, 2*pi) - pi;
-if norm(residual(1:3)) < tol(1) && norm(residual(4:6)) < tol(2)
+if cnt < 10
     flag = 1;
 else
-    flag = 0;
-end
-end
-function [f, g] = objFun(x, Td, robot)
-axang = rotm2axang(Td(1:3,1:3));
-rd = axang(1:3)' * axang(4);
-rd2 =  -axang(1:3)' * (2*pi-axang(4));
-td = Td(1:3,4);
-[Jb, T] = jacobian_matrix(robot, x);
-g = -analytic_jacobian_matrix(Jb, T);
-axang = rotm2axang(T(1:3,1:3));
-r = axang(1:3)' * axang(4);
-t = T(1:3,4);
-if norm(rd2 - r) > norm(rd - r)
-    f = [rd;td] - [r;t];
-else
-    f = [rd2;td] - [r;t];
-end
+    [angles, flag] = inverse_kin_general_lsqnonlin(robot, Td, ref, tol);
 end
