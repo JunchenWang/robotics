@@ -27,7 +27,7 @@ mass = mean(M);
 sigma = std(M);
 ind = abs(M - mass) > 3 * sigma;
 if ~isempty(ind)
-    warning('find outliers');
+    disp('find outliers');
     outliers(ind, :) = [];
     M(ind) = [];
     m = size(outliers, 1);
@@ -62,7 +62,7 @@ end
 % end
 r = A \ b;
 if (norm(b - A * r) / norm(b) > 0.02)
-    warning('data may be not good');
+    disp('data may be not good');
 end
 cnt = 1;
 for k = 1 : m
