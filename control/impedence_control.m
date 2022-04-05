@@ -4,7 +4,10 @@ q = y(1:n);
 qd = y(n + 1 : 2 * n);
 % velocity noise
 % qd = max(qd) * randn(n,1); 
+% X = forward_kin_kuka(q);
+% X(1:3,4) = X(1:3,4) / 1000;
 [Jb, X] = jacobian_matrix(robot, q);
+% disp(norm(X-XX));
 R = X(1:3,1:3);
 % p = X(1:3,4);
 Rd = Xd(1:3, 1:3);
