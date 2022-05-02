@@ -6,8 +6,8 @@ cnt = 1;
 outliers = zeros(m, 2);
 for i = 1 : n - 1
     for j = i + 1 : n
-        Ri = RotationByAxisAngleRep(data(i,4:6));
-        Rj = RotationByAxisAngleRep(data(j,4:6));
+        Ri = exp_w(data(i,4:6));
+        Rj = exp_w(data(j,4:6));
         Fi = data(i,7:9);
         Fj = data(j,7:9);
         
