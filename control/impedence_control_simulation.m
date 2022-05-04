@@ -7,11 +7,11 @@ u = udpport("byte");
 ptp([-40, 70, 0, -80, 0, -60, 0]/180*pi);
 % ptp([0, -60, 80, -100, -90, 0]/180*pi);
 
-lineTo2(robot, [-500,0,0]) % axang2rotm([0,1,0,pi/2]));
+lineTo2(robot, [-500,0,0]); % axang2rotm([0,1,0,pi/2]));
 
     function F = Wrench(t)
         if t < 3 && t > 1
-            F = [0, 0, 0, 0, 0, 0]';
+            F = [12, 0, 0, 0, 0, 10]';
         else
             F = zeros(6,1);
         end
@@ -24,7 +24,8 @@ lineTo2(robot, [-500,0,0]) % axang2rotm([0,1,0,pi/2]));
         if isrow(t)
             t = t';
         end
-
+        Tcp = eye(4);
+        Tsensor = eye(4);
         start = queryJoints;
         pre_q = start;
         q = pre_q;
@@ -43,7 +44,7 @@ lineTo2(robot, [-500,0,0]) % axang2rotm([0,1,0,pi/2]));
         [tforms,vel,~] = transformtraj(Ts,Te,[0 T],tSamples, 'TimeScaling', [s;sd;sdd]);
         m = 1;
         k1 = 400;
-        k2 = 400;
+        k2 = 40;
         b1 = 2*sqrt(k1*m);
         b2 = 2*sqrt(k2*m);
         M = cat(3, m*eye(3), m*eye(3));
@@ -53,8 +54,12 @@ lineTo2(robot, [-500,0,0]) % axang2rotm([0,1,0,pi/2]));
         pe2 = zeros(3,1);
         red2 = zeros(3,1);
         ped2 = zeros(3,1);
-        data_re = zeros(3, numSamples);
-        data_pe = zeros(3, numSamples);
+                re = zeros(3,1);
+        pe = zeros(3,1);
+        red = zeros(3,1);
+        ped = zeros(3,1);
+        data_re = zeros(6, numSamples);
+        data_pe = zeros(6, numSamples);
         for i = 1 : numSamples
             Td = tforms(:,:,i);
 %             Td = Ts;
@@ -70,18 +75,20 @@ lineTo2(robot, [-500,0,0]) % axang2rotm([0,1,0,pi/2]));
             pe2 = pe2 + dt * ped2;
             red2 = red2 + dt * redd2;
             re2 = re2 + dt * red2;
-
-              [re, pe] = impedence_control(robot, Td, Vd, M(:,:,1), B(:,:,1), K(:,:,1),...
-                                                 M(:,:,2), B(:,:,2), K(:,:,2), y, f, dt);
-            data_pe(:,i) = pe;
-            data_re(:,i) = re;
-            Tbs = Td;
-            Tbs(1:3,4) = zeros(3,1);
+% 
+%               [re, pe] = impedence_control(robot, Td, Vd, M(:,:,1), B(:,:,1), K(:,:,1),...
+%                                                  M(:,:,2), B(:,:,2), K(:,:,2), y, f, dt);
+[T, re, pe, red, ped, redd, pedd] = impedance_control(robot, Tcp, Tsensor, Td, Vd, M(:,:,1), B(:,:,1), K(:,:,1),...
+                                                   M(:,:,2), B(:,:,2), K(:,:,2), y, f, dt);
+            data_pe(:,i) = [pe; 0;0;0];
+            data_re(:,i) = [re; 0;0;0];
+            Tbs = eye(4);
+            Tbs(1:3,1:3) = Td(1:3,1:3)';
             Vd_b = adjoint_T(Tbs) * Vd * dt;
             Td = Td * exp_twist(Vd_b);
 %             delta = Td - tforms(:,:,i+1);
-%             disp(norm(Vd_b));
-            R = Td(1:3,1:3) * exp_w(re)';
+%             disp(norm(delta));
+            R = Td(1:3,1:3) * exp_w(-re);
             p = Td(1:3,4) - R * pe;
             X = [R, p; 0, 0, 0, 1];
             angles = inverse_kin_kuka_kesai_near(X, kesai, q);
@@ -100,8 +107,9 @@ lineTo2(robot, [-500,0,0]) % axang2rotm([0,1,0,pi/2]));
             %         [angles, flag] = UR_inverse_kin_near(robot, X, pre_q);
             %         waitfor(r);
         end
-%         plot(data');
         plot(data_pe');
+        figure;
+        plot(data_re');
     end
 
     function ptp(jts, vel)
