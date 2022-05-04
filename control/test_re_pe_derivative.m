@@ -1,0 +1,40 @@
+function test_re_pe_derivative
+robot =  read_dynamics_file('dynamics.txt');
+q = pi * rand(1,7) - pi / 2;
+qd = 1.5 * rand(1, 7);
+dq = pi * rand(1,7) - pi / 2;
+dqd = 1.5 * rand(1, 7);
+[Jb, X] = jacobian_matrix(robot, q);
+[Jbd, Xd] = jacobian_matrix(robot, dq);
+Vd = Jbd * dqd';
+Tsb = eye(4);
+Tsb(1:3,1:3) = Xd(1:3, 1:3);
+Tbs = Tsb;
+Tbs(1:3,1:3) = Xd(1:3, 1:3)';
+Vd = adjoint_T(Tsb) * Vd;
+
+R = X(1:3,1:3); 
+p = X(1:3,4);
+Rd = Xd(1:3, 1:3);
+pd = Xd(1:3,4);
+V = Jb * qd';
+pe = R' * (pd - p);
+ped = -so_w(V(1:3)) * pe + R' * Vd(4:6) - V(4:6);
+re = logR(R'*Rd)';
+Ar = w_dr_A(re);
+red = Ar \ (Rd' * Vd(1:3) - Rd'*R*V(1:3));
+
+delta = 1e-8;
+X2 = forward_kin_general(robot, q + delta * qd);
+Xd2 = Xd * exp_twist(adjoint_T(Tbs) * Vd * delta);
+R2 = X2(1:3,1:3); 
+p2 = X2(1:3,4);
+Rd2 = Xd2(1:3, 1:3);
+pd2 = Xd2(1:3,4);
+pe2 = R2' * (pd2 - p2);
+re2 = logR(R2'*Rd2)';
+red2 = (re2 - re) / delta;
+ped2 = (pe2 - pe) / delta;
+disp(norm(ped - ped2));
+disp(norm(red - red2));
+disp("finish");
