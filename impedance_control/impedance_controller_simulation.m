@@ -10,10 +10,10 @@ ptp([-40, 70, 0, -80, 0, -60, 0]/180*pi);
 lineTo2(robot, [-500, 0,0]); % axang2rotm([0,1,0,pi/2]));
 
     function F = Wrench(t, y)
+        F = zeros(6,7);
         if t < 3 && t > 1
-            F = [10, 0, 0, 0, 0, 10]';
-        else
-            F = zeros(6,1);
+%             F(:,end) = [10, 0, 0, 0, 0, 10]';
+                F(:,4) = [0, 0, 0, 0, 0, 2]';
         end
     end
 
@@ -42,7 +42,7 @@ lineTo2(robot, [-500, 0,0]); % axang2rotm([0,1,0,pi/2]));
         Dd = diag([1, 1, 1, 10, 10, 10] * 5);
         y0 = [start, zeros(1,n)]';
         tao = @(t, y) impedance_controller2(robot, t,y, tforms,vel, acc, Dd, Kd, dt);
-        control_target = @(t, y) manipulator_dynamics(robot, tao, @Wrench,t, y); 
+        control_target = @(t, y) manipulator_dynamics_extForce(robot, tao, @Wrench,t, y); 
         [t,y] = ode23(control_target,[0, T],y0,opts);
         plot(t, y(:,1:n)');
     end
