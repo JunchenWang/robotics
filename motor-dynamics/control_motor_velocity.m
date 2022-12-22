@@ -16,6 +16,6 @@ tspan = [0, 10];
 [t, y] = ode45(dynamic, tspan, y0);
 for i = 1 : length(t)
     ydt = yd(t(i));
-    y(i,3) = ydt(2) - y(i,2);
+    y(i,3) = ydt(1) - y(i,2);
 end
 plot(t, y(:,2:3)');

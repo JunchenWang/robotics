@@ -1,5 +1,5 @@
 
-function impedence_control_simulation
+function admittance_controller_simulation
 
 robot = read_dynamics_file('F:\robotics\urdf\iiwa7\dynamics.txt');
 % robot = UR5e;
@@ -11,7 +11,7 @@ lineTo2(robot, [-500,0,0]); % axang2rotm([0,1,0,pi/2]));
 
     function F = Wrench(t)
         if t < 3 && t > 1
-            F = [12, 0, 0, 0, 0, 10]';
+            F = [0, 0, 0, 0, 0, 10]';
         else
             F = zeros(6,1);
         end
@@ -78,7 +78,7 @@ lineTo2(robot, [-500,0,0]); % axang2rotm([0,1,0,pi/2]));
 % 
 %               [re, pe] = impedence_control(robot, Td, Vd, M(:,:,1), B(:,:,1), K(:,:,1),...
 %                                                  M(:,:,2), B(:,:,2), K(:,:,2), y, f, dt);
-[T, re, pe, red, ped, redd, pedd] = impedance_control(robot, Tcp, Tsensor, Td, Vd, M(:,:,1), B(:,:,1), K(:,:,1),...
+[T, re, pe, red, ped, redd, pedd] = admittance_controller(robot, Tcp, Tsensor, Td, Vd, M(:,:,1), B(:,:,1), K(:,:,1),...
                                                    M(:,:,2), B(:,:,2), K(:,:,2), y, f, dt);
             data_pe(:,i) = [pe; 0;0;0];
             data_re(:,i) = [re; 0;0;0];
@@ -118,7 +118,7 @@ lineTo2(robot, [-500,0,0]); % axang2rotm([0,1,0,pi/2]));
         end
         start = queryJoints;
         wayPoints = [start',jts'];
-        Freq = 200;
+        Freq = 500;
         r = rateControl(Freq);
         T = max(abs(jts - start) / vel);
         numSamples = round(T * Freq) + 1;

@@ -2,11 +2,11 @@ function simulate_twoLinkRobot
 u = udpport("byte");
 robot = twoLinkRobot;
 n = robot.dof;
-pos0 = [0, 0];
+pos0 = [pi/2, 0];
 y0 = [pos0 + rand(1,2) * 0.001, 0, 0]';
 tao = @(t, y) [0, 0]';
 dynamic = @(t, y) twoLinkRobot_dynamics(t, y, robot, tao);
-tspan = [0, 10];
+tspan = [0, 20];
 opts = odeset('OutputFcn',@odeplot);
 pret = 0;
 [t, y] = ode45(dynamic, tspan, y0, opts);

@@ -1,5 +1,5 @@
 function test_re_pe_derivative
-robot =  read_dynamics_file('dynamics.txt');
+robot =  read_dynamics_file('F:\MICR\MICSys\dynamics.txt');
 q = pi * rand(1,7) - pi / 2;
 qd = 1.5 * rand(1, 7);
 dq = pi * rand(1,7) - pi / 2;

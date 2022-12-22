@@ -1,4 +1,4 @@
-function [T, re, pe, red, ped, redd, pedd] = impedance_control(robot, Tcp, Tsensor, Xd, Vd, Mp, Bp, Kp, Mr, Br, Kr, y, f, dt)
+function [T, re, pe, red, ped, redd, pedd] = admittance_controller(robot, Tcp, Tsensor, Xd, Vd, Mp, Bp, Kp, Mr, Br, Kr, y, f, dt)
 n = robot.dof;
 q = y(1:n);
 qd = y(n + 1 : 2 * n);

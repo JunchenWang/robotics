@@ -1,4 +1,4 @@
-function [T, re, pe, red, ped] = impedance_k_b_control(robot, Tcp, Tsensor, Xd, Vd, Bp, Kp, Br, Kr, q, f, dt)
+function [T, re, pe, red, ped] = admittance_k_b_control(robot, Tcp, Tsensor, Xd, Vd, Bp, Kp, Br, Kr, q, f, dt)
 X = forward_kin_general(robot, q);
 X = X * Tcp;
 R = X(1:3,1:3); 

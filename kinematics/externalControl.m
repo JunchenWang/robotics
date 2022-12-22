@@ -314,7 +314,7 @@ end
 function joints = queryJoints
 global u;
 % ";" 表示查询关节角
-writeline(u,"robot;","192.168.3.34",7755);
+writeline(u,"robot;","127.0.0.1",7755);
 s = readline(u);
 joints = sscanf(s,'%f;%f;%f;%f;%f;%f;%f;')';
 
@@ -325,4 +325,4 @@ function setJoints(jt)
 global u;
 cmd = sprintf('robot;%f;%f;%f;%f;%f;%f;%f;', jt(1), jt(2), jt(3), jt(4), jt(5)...
     ,jt(6), jt(7));
-writeline(u,cmd,"192.168.3.34",7755);
+writeline(u,cmd,"127.0.0.1",7755);

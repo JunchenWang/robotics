@@ -13,4 +13,4 @@ for i = 1 : length(t)
     ydt = yd(t(i));
     y(i,2) = ydt(1) - y(i,1);
 end
-plot(t, y');
+plot(t, y);
