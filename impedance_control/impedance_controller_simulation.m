@@ -43,7 +43,7 @@ lineTo2(robot, [0, 0,0]); % axang2rotm([0,1,0,pi/2]));
         Kd = diag([100,100,100,1000,1000,1000]*1);
         Dd = diag([1, 1, 1, 10, 10, 10] * 5);
         Dn = diag(ones(1,7) * 2);
-        Kn = diag(ones(1,7) * 10);
+        Kn = diag(ones(1,7) * 5);
         y0 = [start, zeros(1,n)]';
         tao = @(t, y) impedance_controller2(robot, t,y, tforms,vel, acc, Dd, Kd, dt) ...
                       + nullspace_impedance_controller(robot, t, y, tforms, kesai, Dn, Kn, dt);
