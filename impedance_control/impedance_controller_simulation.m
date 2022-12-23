@@ -7,13 +7,14 @@ u = udpport("byte");
 ptp([-40, 70, 0, -80, 0, -60, 0]/180*pi);
 % ptp([0, -60, 80, -100, -90, 0]/180*pi);
 
-lineTo2(robot, [-500, 0,0]); % axang2rotm([0,1,0,pi/2]));
+lineTo2(robot, [0, 0,0]); % axang2rotm([0,1,0,pi/2]));
 
     function F = Wrench(t, y)
         F = zeros(6,7);
         if t < 3 && t > 1
-%             F(:,end) = [10, 0, 0, 0, 0, 10]';
-                F(:,4) = [0, 0, 0, 0, 0, 2]';
+%              F(:,end) = [0, 0, 0, 0, 0, -10]';
+             F(:,4) = [0, 0, 0, 0, 0, 10]';
+%              F(:,3) = [0, 0, 0, -10, 0, 0]';
         end
     end
 
@@ -28,6 +29,7 @@ lineTo2(robot, [-500, 0,0]); % axang2rotm([0,1,0,pi/2]));
         MassMatrix = @(t, y) [eye(n), zeros(n); zeros(n), mass_matrix(robot, y(1:n))];
         opts = odeset('Mass',MassMatrix,'OutputFcn',@odeplot);
         start = queryJoints;
+        kesai = cal_kuka_kesai(start);
         Ts = forward_kin_general(robot, start);
         Te = Ts*[R,t / 1000;0 0 0 1];
         T = 5;
@@ -38,10 +40,13 @@ lineTo2(robot, [-500, 0,0]); % axang2rotm([0,1,0,pi/2]));
         [s,sd,sdd] = trapveltraj([0, 1],numSamples, 'EndTime', T);
         tSamples = linspace(0,T,numSamples);
         [tforms,vel, acc] = transformtraj(Ts,Te,[0 T],tSamples, 'TimeScaling', [s;sd;sdd]);
-        Kd = diag([100,100,100,1000,1000,1000]*0.1);
+        Kd = diag([100,100,100,1000,1000,1000]*1);
         Dd = diag([1, 1, 1, 10, 10, 10] * 5);
+        Dn = diag(ones(1,7) * 2);
+        Kn = diag(ones(1,7) * 10);
         y0 = [start, zeros(1,n)]';
-        tao = @(t, y) impedance_controller2(robot, t,y, tforms,vel, acc, Dd, Kd, dt);
+        tao = @(t, y) impedance_controller2(robot, t,y, tforms,vel, acc, Dd, Kd, dt) ...
+                      + nullspace_impedance_controller(robot, t, y, tforms, kesai, Dn, Kn, dt);
         control_target = @(t, y) manipulator_dynamics_extForce(robot, tao, @Wrench,t, y); 
         [t,y] = ode23(control_target,[0, T],y0,opts);
         plot(t, y(:,1:n)');
