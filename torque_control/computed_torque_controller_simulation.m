@@ -1,5 +1,5 @@
 
-function impedance_controller_simulation
+function computed_torque_controller_simulation
 
 robot = read_dynamics_file('F:\MICR\MICSys\dynamics.txt');
 n = robot.dof;
@@ -7,14 +7,13 @@ u = udpport("byte");
 ptp([-40, 70, 0, -80, 0, -60, 0]/180*pi);
 % ptp([0, -60, 80, -100, -90, 0]/180*pi);
 
-lineTo2(robot, [0, 0,0]); % axang2rotm([0,1,0,pi/2]));
+lineTo2(robot, [-500, 0,0]); % axang2rotm([0,1,0,pi/2]));
 
     function F = Wrench(t, y)
         F = zeros(6,7);
         if t < 3 && t > 1
 %              F(:,end) = [0, 0, 0, 0, 0, -10]';
              F(:,4) = [0, 0, 0, 0, 0, 10]';
-%              F(:,3) = [0, 0, 0, -10, 0, 0]';
         end
     end
 
@@ -40,15 +39,18 @@ lineTo2(robot, [0, 0,0]); % axang2rotm([0,1,0,pi/2]));
         [s,sd,sdd] = trapveltraj([0, 1],numSamples, 'EndTime', T);
         tSamples = linspace(0,T,numSamples);
         [tforms,vel, acc] = transformtraj(Ts,Te,[0 T],tSamples, 'TimeScaling', [s;sd;sdd]);
-        Kd = diag([100,100,100,1000,1000,1000]*1);
-        Dd = diag([1, 1, 1, 10, 10, 10] * 5);
+        Kp = diag([100,100,100,100,100,100]*2);
+        Kd = diag([1, 1, 1, 1, 1, 1] * 5);
+        Ki = diag([1, 1, 1, 1, 1, 1] * 2);
         Dn = diag(ones(1,7) * 2);
         Kn = diag(ones(1,7) * 4);
         y0 = [start, zeros(1,n)]';
-        tao = @(t, y) impedance_controller2(robot, t,y, tforms,vel, acc, Dd, Kd, dt) ...
+        clear computed_torque_controller2;
+        clear computed_torque_controller1;
+        tao = @(t, y) computed_torque_controller1(robot, t,y, tforms,vel, acc, Kp, Ki, Kd, dt)...
                       + nullspace_impedance_controller(robot, t, y, tforms, kesai, Dn, Kn, dt);
         control_target = @(t, y) manipulator_dynamics_extForce(robot, tao, @Wrench,t, y); 
-        [t,y] = ode15s(control_target,[0, T],y0,opts);% ode45解算慢的话试试ode15s
+        [t,y] = ode45(control_target,[0, T + 1],y0,opts);
         plot(t, y(:,1:n)');
     end
     function ret = odeplot(t, y, flag)

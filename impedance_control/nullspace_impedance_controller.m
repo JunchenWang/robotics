@@ -2,6 +2,9 @@ function tao = nullspace_impedance_controller(robot, t, y, Td, kesai, Dn, Kn, dt
 % error in desired frame
 n = robot.dof;
 cnt = round(t / dt) + 1;
+if cnt > size(Td,3)
+    cnt = size(Td,3);
+end
 q = y(1:n);
 qd = y(n + 1 : 2 * n);
 q0 = inverse_kin_kuka_kesai_near(Td(:,:, cnt), kesai, q);
