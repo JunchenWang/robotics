@@ -29,6 +29,7 @@ if ~isempty(inert)
     [I, T] = composite_inertia_matrix(inertia(:,:,n), mass(n), I_e, m_e, T);
     inertia(:,:,n) = I;
     M(:,:,n) =  M(:,:,n) * T;
+    mass(n) =  mass(n) + m_e;
     Tinv = tform_inv(T);
     ME = Tinv * ME;
     A(n,:) = adjoint_T(Tinv)*A(n,:)';
