@@ -1,7 +1,8 @@
 
 function velocity_motion_controller_simulation
 
-robot = read_dynamics_file('F:\MICR\MICSys\dynamics.txt');
+% robot = read_dynamics_file('F:\MICR\MICSys\dynamics.txt');
+robot = convert_robot_tree(importrobot('E:\data\URDF\iiwa7\iiwa7.urdf'));
 n = robot.dof;
 u = udpport("byte");
 ptp([-40, 70, 0, -80, 0, -60, 0]/180*pi);
