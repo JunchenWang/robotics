@@ -56,5 +56,5 @@ xed = [red; ped];
 sum = sum + (t - pre_t) * (xe + pre_xe) / 2;
 pre_t = t;
 pre_xe = xe;
-tao = G + M * invJ * (dVt - Kp * xe - Kd * xed - Ki * sum) + (C * invJ - M * invJ * dJx * invJ) * (Vt);
+tao = G + M * invJ * (dVt - Kp * xe - Kd * xed - Ki * sum) + (C * invJ - M * invJ * dJx * invJ) * (Vt + xed);
 

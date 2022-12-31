@@ -3,16 +3,17 @@ function admittance_controller_simulation
 
 % robot = read_dynamics_file('F:\robotics\urdf\iiwa7\dynamics.txt');
 robot = convert_robot_tree(importrobot('E:\data\URDF\iiwa7\iiwa7.urdf'));
+robot.TCP = [eye(3), [0, 0, 0.213]'; 0 0 0 1];
 % robot = UR5e;
 u = udpport("byte");
 ptp([-40, 70, 0, -80, 0, -60, 0]/180*pi);
 % ptp([0, -60, 80, -100, -90, 0]/180*pi);
 
-lineTo2(robot, [-500,0,0]); % axang2rotm([0,1,0,pi/2]));
+lineTo2(robot, [0,0,0]); % axang2rotm([0,1,0,pi/2]));
 
     function F = Wrench(t)
         if t < 3 && t > 1
-            F = [10, 0, 0, 0, 0, 10]';
+            F = [10, 0, 0, 0, 0, 0]';
         else
             F = zeros(6,1);
         end
@@ -25,14 +26,11 @@ lineTo2(robot, [-500,0,0]); % axang2rotm([0,1,0,pi/2]));
         if isrow(t)
             t = t';
         end
-        Tcp = eye(4);
-        Tsensor = eye(4);
         start = queryJoints;
         pre_q = start;
         q = pre_q;
         kesai = cal_kuka_kesai(start);
-        Ts = forward_kin_kuka(start);
-        Ts(1:3,4) = Ts(1:3,4) / 1000;
+        Ts = forward_kin_general(robot, start);
         Te = Ts*[R,t / 1000;0 0 0 1];
         T = 4;
         Freq = 500;
@@ -55,7 +53,7 @@ lineTo2(robot, [-500,0,0]); % axang2rotm([0,1,0,pi/2]));
         pe2 = zeros(3,1);
         red2 = zeros(3,1);
         ped2 = zeros(3,1);
-                re = zeros(3,1);
+        re = zeros(3,1);
         pe = zeros(3,1);
         red = zeros(3,1);
         ped = zeros(3,1);
@@ -79,7 +77,7 @@ lineTo2(robot, [-500,0,0]); % axang2rotm([0,1,0,pi/2]));
 % 
 %               [re, pe] = impedence_control(robot, Td, Vd, M(:,:,1), B(:,:,1), K(:,:,1),...
 %                                                  M(:,:,2), B(:,:,2), K(:,:,2), y, f, dt);
-[T, re, pe, red, ped, redd, pedd] = admittance_controller(robot, Tcp, Tsensor, Td, Vd, M(:,:,1), B(:,:,1), K(:,:,1),...
+[re, pe, red, ped, redd, pedd] = admittance_controller(robot, Td, Vd, M(:,:,1), B(:,:,1), K(:,:,1),...
                                                    M(:,:,2), B(:,:,2), K(:,:,2), y, f, dt);
             data_pe(:,i) = [pe; 0;0;0];
             data_re(:,i) = [re; 0;0;0];
@@ -92,7 +90,7 @@ lineTo2(robot, [-500,0,0]); % axang2rotm([0,1,0,pi/2]));
             R = Td(1:3,1:3) * exp_w(-re);
             p = Td(1:3,4) - R * pe;
             X = [R, p; 0, 0, 0, 1];
-            angles = inverse_kin_kuka_kesai_near(X, kesai, q);
+            angles = inverse_kin_kuka_robot_kesai_near(robot, X, kesai, q);
 %             angles = inverse_kin_general(robot, X, q, [1e-5,1e-5]);
             %         XX = forward_kin_general(robot ,angles);
             %         disp(norm(XX - X));

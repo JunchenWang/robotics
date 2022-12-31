@@ -1,7 +1,7 @@
 function [dJb, Jb, dT, T] = derivative_jacobian_matrix(robot, q, qd)
 A = robot.A;
 M = robot.M;
-ME = robot.ME;
+ME = robot.ME * robot.TCP;
 n = robot.dof;
 T = ME;
 Jb = zeros(6, n);

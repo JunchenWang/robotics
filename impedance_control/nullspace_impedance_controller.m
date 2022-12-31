@@ -7,7 +7,7 @@ if cnt > size(Td,3)
 end
 q = y(1:n);
 qd = y(n + 1 : 2 * n);
-q0 = inverse_kin_kuka_kesai_near(Td(:,:, cnt), kesai, q);
+q0 = inverse_kin_kuka_robot_kesai_near(robot, Td(:,:, cnt), kesai, q);
 tao = -Dn * qd - Kn * (q - q0');
 [Jb, T] = jacobian_matrix(robot, q);
 M = mass_matrix(robot, q);

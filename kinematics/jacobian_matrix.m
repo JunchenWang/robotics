@@ -1,7 +1,7 @@
 function [Jb, T] = jacobian_matrix(robot, q)
 A = robot.A;
 M = robot.M;
-ME = robot.ME;
+ME = robot.ME * robot.TCP;
 n = robot.dof;
 T = ME;
 Jb = zeros(6, n);

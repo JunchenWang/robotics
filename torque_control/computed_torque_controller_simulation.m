@@ -3,12 +3,13 @@ function computed_torque_controller_simulation
 
 % robot = read_dynamics_file('F:\MICR\MICSys\dynamics.txt');
 robot = convert_robot_tree(importrobot('E:\data\URDF\iiwa7\iiwa7.urdf'));
+robot.TCP = [eye(3), [0, 0, 0.213]'; 0 0 0 1];
 n = robot.dof;
 u = udpport("byte");
 ptp([-40, 70, 0, -80, 0, -60, 0]/180*pi);
 % ptp([0, -60, 80, -100, -90, 0]/180*pi);
 
-lineTo2(robot, [-500, 0,0]); % axang2rotm([0,1,0,pi/2]));
+lineTo2(robot, [-500, 0,0], axang2rotm([0,1,0,pi/6]));
 
     function F = Wrench(t, y)
         F = zeros(6,7);

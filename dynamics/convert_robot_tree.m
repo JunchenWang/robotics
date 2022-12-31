@@ -53,7 +53,7 @@ robot.M = M;% relation at zero position
 robot.ME = ME;% end-effector frame
 robot.com = com; % center of mass
 robot.gravity = [0, 0, -9.8]; % gravity acceleration in base frame
-
+robot.TCP = eye(4);
     function I = getInertiaMatrix(Inertia)
         I = [Inertia(1), Inertia(6), Inertia(5);
             Inertia(6), Inertia(2), Inertia(4);
