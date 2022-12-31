@@ -18,7 +18,7 @@ lineTo2(robot, [-500, 0,0]); % axang2rotm([0,1,0,pi/2]));
             t = t';
         end
         start = queryJoints;
-        kesai = cal_kuka_kesai(start);
+%         kesai = cal_kuka_kesai(start);
         Ts = forward_kin_general(robot, start);
         Te = Ts*[R,t / 1000;0 0 0 1];
         T = 5;

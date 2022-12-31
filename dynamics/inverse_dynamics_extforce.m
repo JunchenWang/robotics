@@ -1,11 +1,12 @@
 function tao = inverse_dynamics_extforce(robot, q, qd, qdd, extForce)
 % extForce is nx6 matrix, the wrench imposed by the envrionment to the robot's end-effector
+% extForce(:,end) is applied to flange and others are applied to link frames
 mass = robot.mass;
 inertia = robot.inertia;
 A = robot.A;
 M = robot.M;
 ME = robot.ME;
-%jtMechanics = robot.jtMechanics;
+com = robot.com;
 n = robot.dof;
 nu0 = zeros(6, 1);
 dnu0 = [0, 0, 0, -robot.gravity]';
@@ -20,12 +21,18 @@ for i = 1 : n
     dnu(:, i) = Map * dnu0 + adjoint_twist(nu0') * A(i,:)' * qd(i) + A(i,:)'*qdd(i);
     dnu0 = dnu(:, i);
 end
-extForce(:,end) = adjoint_T(tform_inv(ME))' * extForce(:,end);
+
 T = eye(4); 
 F = zeros(6,1);
 for i = n : -1 : 1
+     if i < n
+        Tbc = [eye(3), com(i,:)'; 0 0 0 1];
+        extf = adjoint_T(Tbc)' * extForce(:,i);
+     else
+        extf = adjoint_T(tform_inv(ME))' * extForce(:,i);
+     end
     G = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
-    F = adjoint_T(T)'* F + G * dnu(:,i) - adjoint_twist(nu(:,i)')'*(G*nu(:,i)) - extForce(:, i);
-    tao(i) = F'*A(i,:)'; %+ jtMechanics(i, 1) * qd(i) + jtMechanics(i, 2) * (q(i) - jtMechanics(i, 3)); % consider joint mechanics
+    F = adjoint_T(T)'* F + G * dnu(:,i) - adjoint_twist(nu(:,i)')'*(G*nu(:,i)) - extf;
+    tao(i) = F'*A(i,:)';
     T =  exp_twist(-A(i,:)*q(i))*tform_inv(M(:,:,i));
 end
