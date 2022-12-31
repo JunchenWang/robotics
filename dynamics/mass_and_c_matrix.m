@@ -1,4 +1,4 @@
-function [Mq, C, dJ] = mass_and_c_matrix(robot, q, qd)
+function [Mq, C] = mass_and_c_matrix(robot, q, qd)
 mass = robot.mass;
 inertia = robot.inertia;
 A = robot.A;
