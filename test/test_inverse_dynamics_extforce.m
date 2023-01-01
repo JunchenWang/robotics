@@ -1,7 +1,9 @@
 % robot = read_dynamics_file('F:\robotics\urdf\iiwa7\dynamics.txt');
 % robot = convert_robot_tree(importrobot('E:\data\URDF\iiwa7\iiwa7.urdf'));
-robot = convert_robot_tree(importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf'));
-robot.TCP = [eye(3), [0, 0, 0.213]'; 0 0 0 1];
+% robot = convert_robot_tree(importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf'));
+robot = convert_robot_tree(importrobot('abbIrb120.urdf'));
+[R, ~] = qr(rand(3));
+robot.TCP = [R, [0, 0, 0.213]'; 0 0 0 1];
 n = robot.dof;
 q = 2 * pi * rand(1,n) - pi;
 qd = 15 * (rand(1,n) - 0.5);
@@ -24,4 +26,4 @@ tao1 = M * qdd' + C * qd' + G - ext_torque;
 tao2 = inverse_dynamics_extforce(robot, q, qd, qdd, extForce);
 disp(tao1);
 disp(tao2);
-tao1 - tao2
+disp(tao1 - tao2);

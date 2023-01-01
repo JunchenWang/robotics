@@ -1,6 +1,7 @@
 function tao = inverse_dynamics_extforce(robot, q, qd, qdd, extForce)
-% extForce is nx6 matrix, the wrench imposed by the envrionment to the robot's end-effector
-% extForce(:,end) is applied to flange and others are applied to link frames
+% extForce is nx6 matrix, the wrench imposed by the envrionment to the
+% robot's bodies
+% extForce(:,end) is applied to TCP and others are applied to link frames
 mass = robot.mass;
 inertia = robot.inertia;
 A = robot.A;

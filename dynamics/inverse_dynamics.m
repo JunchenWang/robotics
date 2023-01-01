@@ -1,5 +1,6 @@
 function tao = inverse_dynamics(robot, q, qd, qdd, F_ME)
-% F_ME is the wrench imposed to the envrionment by the robot's end-effector
+% F_ME is the wrench imposed to the envrionment by the robot's TCP
+% note that the difference with inverse_dynamics_extforce
 mass = robot.mass;
 inertia = robot.inertia;
 A = robot.A;
