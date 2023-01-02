@@ -1,9 +1,13 @@
 function test_re_pe_derivative
-robot =  read_dynamics_file('F:\MICR\MICSys\dynamics.txt');
-q = pi * rand(1,7) - pi / 2;
-qd = 1.5 * rand(1, 7);
-dq = pi * rand(1,7) - pi / 2;
-dqd = 1.5 * rand(1, 7);
+% robot = convert_robot_tree(importrobot('E:\data\URDF\iiwa7\iiwa7.urdf'));
+robot = convert_robot_tree(importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf'));
+[R, ~] = qr(rand(3));
+robot.TCP = [R, [0, 0, 0.213]'; 0 0 0 1];
+n = robot.dof;
+q = pi * rand(1,n) - pi / 2;
+qd = 1.5 * rand(1, n);
+dq = pi * rand(1,n) - pi / 2;
+dqd = 1.5 * rand(1, n);
 [Jb, X] = jacobian_matrix(robot, q);
 [Jbd, Xd] = jacobian_matrix(robot, dq);
 Vd = Jbd * dqd';

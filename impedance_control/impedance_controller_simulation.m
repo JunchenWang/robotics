@@ -12,7 +12,7 @@ ptp([-40, 70, 0, -80, 0, -60, 0]/180*pi);
 lineTo2(robot, [0, 0,0]); % axang2rotm([0,1,0,pi/2]));
 
     function F = Wrench(t, y)
-        F = zeros(6,7);
+        F = zeros(6,n);
         if t < 3 && t > 1
              F(:,end) = [20, 0, 0, 0, 0, 20]';
 %              F(:,3) = [0, 0, 0, 0, -10, 0]';
@@ -49,7 +49,7 @@ lineTo2(robot, [0, 0,0]); % axang2rotm([0,1,0,pi/2]));
         y0 = [start, zeros(1,n)]';
         tao = @(t, y) impedance_controller2(robot, t,y, tforms,vel, acc, Dd, Kd, dt) ...
                       + nullspace_impedance_controller(robot, t, y, tforms, kesai, Dn, Kn, dt);
-        control_target = @(t, y) manipulator_dynamics_extForce(robot, tao, @Wrench,t, y); 
+        control_target = @(t, y) manipulator_dynamics_fext(robot, tao, @Wrench,t, y); 
         [t,y] = ode15s(control_target,[0, T],y0,opts);% ode45解算慢的话试试ode15s
         plot(t, y(:,1:n)');
     end

@@ -1,6 +1,6 @@
 function test_dynamics
-robot = importrobot('E:\data\URDF\iiwa7\iiwa7.urdf');
-% robot = importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf');
+% robot = importrobot('E:\data\URDF\iiwa7\iiwa7.urdf');
+robot = importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf');
 % robot = importrobot('kinovaGen3V12.urdf');
 showdetails(robot);
 flange = robot.Bodies{robot.NumBodies}.Name;
@@ -23,7 +23,7 @@ F_ME = adjoint_T(my_robot.TCP)'*F_ME;
 extf = zeros(6, n);
 extf(:,end) = -F_ME;
 tao = inverse_dynamics(my_robot, q, qd, qdd, F_ME);
-tao3 = inverse_dynamics_extforce(my_robot, q, qd, qdd, extf);
+tao3 = inverse_dynamics_fext(my_robot, q, qd, qdd, extf);
 qdd_x1 = forward_dynamics(my_robot, q, qd, tao, F_ME);
 tao2 = inverseDynamics(robot, q, qd, qdd, fext);
 qdd_x2 = forwardDynamics(robot, q, qd, tao2, fext);

@@ -1,4 +1,5 @@
 function [dMq, Mq, dJ, J] = derivative_mass_matrix(robot, q, qd)
+% J is expressed in link com, different with jacobian_matrix
 mass = robot.mass;
 inertia = robot.inertia;
 A = robot.A;

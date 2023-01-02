@@ -1,9 +1,9 @@
-function angles = inverse_kin_kuka_robot_kesai(robot, R, t, cfg, kesai, hint)
+function angles = inverse_kin_kuka_robot_kesai(robot, T, cfg, kesai, hint)
 % inverse_kin_kuka kuka med的运动学逆解,冗余信息为kesai
 % cfg signs of axis 2,4,6
 % kesai redundancy
 % hint last angles
-flange = [R,t; 0 0 0 1] * tform_inv(robot.TCP);
+flange = T * tform_inv(robot.TCP);
 R = flange(1:3,1:3);
 t = flange(1:3,4) * 1000;
 if nargin < 5

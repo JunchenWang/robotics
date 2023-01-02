@@ -1,4 +1,5 @@
 function [Mq, J] = mass_matrix(robot, q)
+% J is expressed in link com, different with jacobian_matrix
 mass = robot.mass;
 inertia = robot.inertia;
 A = robot.A;

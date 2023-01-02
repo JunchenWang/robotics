@@ -51,7 +51,7 @@ lineTo2(robot, [-500, 0,0], axang2rotm([0,1,0,pi/6]));
         clear computed_torque_controller1;
         tao = @(t, y) computed_torque_controller2(robot, t,y, tforms,vel, acc, Kp, Ki, Kd, dt)...
                       + nullspace_impedance_controller(robot, t, y, tforms, kesai, Dn, Kn, dt);
-        control_target = @(t, y) manipulator_dynamics_extForce(robot, tao, @Wrench,t, y); 
+        control_target = @(t, y) manipulator_dynamics_fext(robot, tao, @Wrench,t, y); 
         [t,y] = ode45(control_target,[0, T + 1],y0,opts);
         plot(t, y(:,1:n)');
     end

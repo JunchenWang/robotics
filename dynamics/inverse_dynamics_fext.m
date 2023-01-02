@@ -1,7 +1,7 @@
-function tao = inverse_dynamics_extforce(robot, q, qd, qdd, extForce)
-% extForce is nx6 matrix, the wrench imposed by the envrionment to the
+function tao = inverse_dynamics_fext(robot, q, qd, qdd, fext)
+% fext is 6xn matrix, the wrench imposed by the envrionment to the
 % robot's bodies
-% extForce(:,end) is applied to TCP and others are applied to link frames
+% fext(:,end) is applied to TCP and others are applied to link frames
 mass = robot.mass;
 inertia = robot.inertia;
 A = robot.A;
@@ -22,15 +22,15 @@ for i = 1 : n
     dnu(:, i) = Map * dnu0 + adjoint_twist(nu0') * A(i,:)' * qd(i) + A(i,:)'*qdd(i);
     dnu0 = dnu(:, i);
 end
-
 T = eye(4); 
 F = zeros(6,1);
+Tbc = eye(4);
 for i = n : -1 : 1
      if i < n
-        Tbc = [eye(3), com(i,:)'; 0 0 0 1];
-        extf = adjoint_T(Tbc)' * extForce(:,i);
+        Tbc(1:3,4) = com(i,:);
+        extf = adjoint_T(Tbc)' * fext(:,i);
      else
-        extf = adjoint_T(tform_inv(ME))' * extForce(:,i);
+        extf = adjoint_T(tform_inv(ME))' * fext(:,i);
      end
     G = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
     F = adjoint_T(T)'* F + G * dnu(:,i) - adjoint_twist(nu(:,i)')'*(G*nu(:,i)) - extf;
