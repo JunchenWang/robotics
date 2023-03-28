@@ -26,5 +26,6 @@ robot.A = A;
 robot.ME = eye(4);
 robot.mass = [3.761, 8.058, 2.846, 1.37, 1.3, 0.365]';
 robot.inertia = zeros(3,3,6);
-robot.jtMechanics = zeros(6,3);
+robot.com = zeros(6,3);
 robot.gravity=[0 0 -9.8000];
+robot.TCP = eye(4);
