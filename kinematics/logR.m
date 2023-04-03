@@ -1,7 +1,5 @@
 function w = logR(R)
 % rotation R -> axis angle rep
-[U,~,V] = svd(R);
-R = U * V';
 eps = 1e-7; % do not change
 n = size(R, 3);
 w = zeros(n, 3);
