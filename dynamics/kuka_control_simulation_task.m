@@ -1,8 +1,8 @@
 function kuka_control_simulation_task
 u = udpport("byte");
-robot = read_dynamics_file('F:\MICR\MICSys\dynamics.txt');
+robot = convert_robot_tree(importrobot('E:\data\URDF\iiwa7\iiwa7.urdf'));
 robot2 = robot;
-robot2.mass(7) = 3.1;% error
+% robot2.mass(7) = 3.1;% error
 n = robot.dof;
 if n ~= 7
     error('not kuka!');
@@ -51,7 +51,7 @@ clear cartesian_velocity_estimator;
 for i = 1 : N
     [vel(:,i), acc(:,i)] = cartesian_velocity_estimator(tSamples(i), tforms(:,:,i));
 end
-tao = @(t, y) computed_torque_control_task(robot2, tforms,vel, acc, pid, freq, t, y);
+tao = @(t, y) computed_torque_controller(robot2, tforms,vel, acc, pid, freq, t, y);
 clear computed_torque_control_task;
 control_target = @(t, y) manipulator_dynamics(robot, tao, @ext_wrench,t, y); 
 torque = [];
@@ -61,7 +61,7 @@ plot(t, y(:,1:n)');
 figure;
 plot(torque');
     function Fext = ext_wrench(t, y)
-        Fext = zeros(6,1);
+        Fext = [0, 0, 0, 1, 0, 0]';
     end
     function ret = odeplot(t, y, flag)
         if strcmp(flag, 'init') == 1
@@ -75,7 +75,7 @@ plot(torque');
     function setJoints(jt)
         cmd = sprintf('robot;%f;%f;%f;%f;%f;%f;%f;', jt(1), jt(2), jt(3), jt(4), jt(5)...
             ,jt(6), jt(7));
-        writeline(u,cmd,"192.168.3.34",7755);
+        writeline(u,cmd,"127.0.0.1",7755);
     end
     function ptp(jts, vel)
         if nargin < 2
@@ -95,7 +95,7 @@ plot(torque');
     end
     function joints = queryJoints
         % ";" 表示查询关节角
-        writeline(u,"robot;","192.168.3.34",7755);
+        writeline(u,"robot;","127.0.0.1",7755);
         s = readline(u);
         joints = sscanf(s,'%f;%f;%f;%f;%f;%f;%f;')';
         joints = mod(joints + pi, 2*pi) - pi;
