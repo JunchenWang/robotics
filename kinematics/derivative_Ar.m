@@ -1,7 +1,7 @@
 function dA = derivative_Ar(r, dr)
 nr = norm(r);
-if nr < 1e-6
-    r = 1e-6 * ones(3,1); % 1e-6 not change, 为了应对r接近于零的奇异位置
+if nr < eps
+    r = eps * ones(3,1); % 1e-6 not change, 为了应对r接近于零的奇异位置
     nr = norm(r);
 end
 dnr = dot(dr,r) / nr;
