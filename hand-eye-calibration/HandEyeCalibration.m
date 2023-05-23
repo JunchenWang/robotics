@@ -27,8 +27,8 @@ frame_err = FrameDistance(AX, XB);
 % display(frame_err);
 
 function [fA, fB] = selection_process(A, B)
-A = EulZYXFrame2RVFrame(A);
-B = EulZYXFrame2RVFrame(B);
+% A = EulZYXFrame2RVFrame(A);
+% B = EulZYXFrame2RVFrame(B);
 n = size(A, 2);
 fA = zeros(6, n * n);
 fB = zeros(6, n * n);

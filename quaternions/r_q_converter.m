@@ -13,7 +13,7 @@ else
     if fq(1) < 0
         fq = -fq;
     end
-    if (fq(1) == 1)
+    if (fq(1) >= 1)
         qf = [0;0;0];
     else
         theta = acos(fq(1));
