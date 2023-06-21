@@ -1,9 +1,9 @@
 function robot = ElmoArm
 % no dynamic data
-alpha = [0.0, pi/2, 0, 0, pi/2, -pi/2];
+alpha = [pi, pi/2, pi, pi, pi/2, pi/2];
 a = [0, 0, 0.385, 0.315, 0, 0];
-d = [0.136,  0.1245, 0, 0, 0.095, 0.0895];
-delta_theta = [0, pi/2, pi/2, pi/2, -pi/2, 0];
+d = [-0.136,  -0.1245, 0, 0, 0.095, -0.0895];
+delta_theta = [pi, -pi/2, pi/2, pi/2, pi/2, pi];
 delta_a = [ 0, 0, 0, 0, 0, 0];
 delta_d = [0, 0, 0, 0, 0, 0];
 delta_alpha = [0, 0, 0, 0, 0, 0];
@@ -23,7 +23,7 @@ for i = 1 : 6
 end
 robot.M = M;
 robot.A = A;
-robot.ME = eye(4);
+robot.ME = [1 0 0 0; 0 -1 0 0; 0 0 -1 0; 0 0 0 1];
 robot.mass = [3.761, 8.058, 2.846, 1.37, 1.3, 0.365]';
 robot.inertia = zeros(3,3,6);
 robot.com = zeros(6,3);
