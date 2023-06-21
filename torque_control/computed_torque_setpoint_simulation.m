@@ -3,19 +3,22 @@ function computed_torque_setpoint_simulation
 
 % robot = read_dynamics_file('F:\MICR\MICSys\dynamics.txt');
 robot = convert_robot_tree(importrobot('E:\data\URDF\iiwa7\iiwa7.urdf'));
-robot.TCP = [eye(3), [0, 0, 0.213]'; 0 0 0 1];
+% robot.TCP = [eye(3), [0, 0, 0.213]'; 0 0 0 1];
 robot2 = robot;
-robot2.mass(7) = robot2.mass(7) + 0.1;
+% robot2.mass = robot2.mass * 1.2;
 n = robot.dof;
 u = udpport("byte");
-ptp([-40, 70, 0, -80, 0, -60, 0]/180*pi);
-setpoint(robot, [-500, 0,0], axang2rotm([0,1,0,pi/6]));
+y0 = zeros(2*n,1);
+y0(1:7) = [0 75 0 -94 0 -81 0] / 180 * pi;
+ptp(y0(1:n)');
+setpoint(robot, [-500, 0,0]);
 
-    function F = Wrench(t, y)
-        F = zeros(6,7);
-        if t < 0.6 && t > 0.5
-%              F(:,end) = [0, 0, 0, 0, 0, 10]';
-%              F(:,4) = [0, 0, 0, 0, 0, 20]';
+     function F = Wrench(t, y)
+        F = zeros(6,n);
+        if t < 3 && t > 1
+             F(:,4) = [0, 0, 0, 0, 0, 30]';
+%              F(:,3) = [0, 0, 0, 0, -10, 0]';
+%              F(:,3) = [0, 0, 0, -10, 0, 0]';
         end
     end
 
@@ -32,14 +35,16 @@ setpoint(robot, [-500, 0,0], axang2rotm([0,1,0,pi/6]));
         start = queryJoints;
         kesai = cal_kuka_kesai(start);
         Ts = forward_kin_general(robot, start);
-        Te = Ts*[R,t / 1000;0 0 0 1];
+        Te = Ts;
+        Te(3,4) = Te(3,4) + 0.5;
+        % Te = Ts*[R,t / 1000;0 0 0 1];
         T = 5;
-        K = 10;
+        K = 50;
         Kp = diag([1,1,1,1,1,1]*K);
         Kd = diag([1, 1, 1, 1, 1, 1] * 2 * sqrt(K));
 %         Ki = diag([1, 1, 1, 1, 1, 1] * 0);
-        Dn = diag(ones(1,7) * 2 * sqrt(10));
-        Kn = diag(ones(1,7) * 10);
+        Dn = diag(ones(1,7) * 2);
+        Kn = diag(ones(1,7) * 4);
         y0 = [start, zeros(1,n)]';
         tao = @(t, y) setpoint_controller(robot2, t,y, Te,zeros(6,1), zeros(6,1), Kp, Kd)...
                       + nullspace_controller(robot2, t, y, Te, kesai, Dn, Kn);

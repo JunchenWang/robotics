@@ -18,4 +18,5 @@ Ar = w_dr_A(re);
 Jw = Jb(1:3,:);
 Jv = Jb(4:6,:);
 Jx = [Ar \ Jw; Rd'*R*Jv];
+% tao = tao - Jb' * ((Jb * (M \ Jb'))  \ (Jb * (M \ tao)));
 tao = tao - Jx' * ((Jx * (M \ Jx'))  \ (Jx * (M \ tao)));
