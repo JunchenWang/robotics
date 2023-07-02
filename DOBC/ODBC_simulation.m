@@ -9,7 +9,7 @@ kp = 25;
 Kp = kp * eye(6);
 Kd = 20 * eye(6);
 Bn = diag(ones(1,7) * 4);
-Kn = diag(ones(1,7) * 10);
+Kn = diag(ones(1,7) * 5);
 
 MassMatrix = @(t, y) [eye(n), zeros(n, 2 * n); zeros(n), mass_matrix(robot, y(1:n)), zeros(n); zeros(n, 2 * n), eye(n)];
 opts = odeset('Mass',MassMatrix,'OutputFcn',@odeplot);
@@ -29,8 +29,8 @@ tSamples = linspace(tInterval(1), tInterval(2), N);
 [tforms,v,a] = transformtraj(refPose,refPose,tInterval,tSamples, 'TimeScaling', [scale;sd;sdd]);
 
 Y = 10 * eye(n);
-tao = @(t, y) DO_controller(robot2, tforms,v, a, Kp, Kd, Bn, Kn, kesai, freq, Y, t, y);      
-control_target = @(t, y) manipulator_dynamics_observer(robot, tao, @Wrench, t, y); 
+controller = @(t, y) DO_controller(robot2, tforms,v, a, Kp, Kd, Bn, Kn, kesai, freq, Y, t, y);      
+control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @Wrench, t, y); 
 torque = [];
 error = [];
 speed = [];
@@ -61,7 +61,7 @@ plot(tt, speed);
             Xd = tforms(:,:, round(t(end) * freq + 1));
             speed = [speed, y(n+1:2*n, end)];
             error = [error; twist_dist(X, Xd)];
-            torque = [torque, tao(t(end), y(:,end))];
+            torque = [torque, controller(t(end), y(:,end))];
             tt = [tt, t(end)];
             % torque = [torque, y(2 * n+1:3*n, end)];
         else

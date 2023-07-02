@@ -45,22 +45,24 @@ dXe = dInvX * Xd + invX * dXd;
 [dAdXe, AdXe] = derivative_adjoint_T(Xe, dXe);
 Ve = AdXe * Vd - V;
 
-% ax1 = dAdXe * Vd + AdXe * dVd + Kp * xe + Kd * Ve;
+ax1 = dAdXe * Vd + AdXe * dVd + Kp * xe + Kd * Ve;
 % % ax1 = dAdXe * Vd + AdXe * dVd + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Kd) * Ve + Kp * xe);
-s = Ve + Kp * xe;
-ax1 = dAdXe * Vd + AdXe * dVd + Kp * Ve + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Kd) * s ); %+ pinv_JT_x(Jb, M, td)
+% s = Ve + Kp * xe;
+% ax1 = dAdXe * Vd + AdXe * dVd + Kp * Ve + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Kd) * s ); %+ pinv_JT_x(Jb, M, td)
 a1 = pinv_J_x(Jb, M, ax1 - dJb * qd);
 
 qe = q0 - q;
-% qed = -qd;
-% a2 = null_proj(Jb, M, M \ (Bn * qed + Kn * qe));
-ax2 = A_v(Z, M) \ ((Mu_v(Z, M, dZ, dM, C) + Bn(1)) * (-pinv_Z(Z, M) * qd) + Z' * Kn(1) * qe);
-a2 = Z * (ax2 - derivative_pinv_Z(Z, M, dZ, dM) * qd);
+qed = -qd;
+a2 = null_proj(Jb, M, M \ (Bn * qed + Kn * qe));
+% ax2 = A_v(Z, M) \ ((Mu_v(Z, M, dZ, dM, C) + Bn(1)) * (-pinv_Z(Z, M) * qd) + Z' * Kn(1) * qe);
+% a2 = Z * (ax2 - derivative_pinv_Z(Z, M, dZ, dM) * qd);
 
 % tao = M * (a1 + a2) + C * qd + G;
 % td = -Y * pinv_J_x(Jb, M, s);
 P = Y * qd;
 tao_d = td + P;
+% tao_d = tao_d - M * Z * pinv_Z(Z, M) * tao_d;
+tao_d = Jb' * ((Jb * (M \ Jb'))  \ (Jb * (M \ tao_d))); % minus the component projected into the null space !
 disp(tao_d);
 tao = M * (a1 + a2) + C * qd + G - tao_d;
 td = Y * (M \ (C * qd + G - tao - P - td));
