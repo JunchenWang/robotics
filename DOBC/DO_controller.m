@@ -1,9 +1,10 @@
-function tao = torque_controller(robot, Td, w_v_d, alpha_a_d, Kp, Kd, Bn, Kn, kesai, freq, Y, t, y)
+function [tao, td] = DO_controller(robot, Td, w_v_d, alpha_a_d, Kp, Kd, Bn, Kn, kesai, freq, Y, t, y)
 % Xd is desired motion in task space
 cnt = round(t * freq + 1);
 n = robot.dof;
 q = y(1:n);% + 1e-3 * rand(1, 7); % noise
 qd = y(n + 1: 2 * n);% + 1e-3 * rand(1, 7); %noise
+td = y(2 * n + 1 : end);
 if size(Td, 3) > 1
     Xd = Td(:,:,cnt);
     Rd = Xd(1:3, 1:3);
@@ -47,7 +48,7 @@ Ve = AdXe * Vd - V;
 % ax1 = dAdXe * Vd + AdXe * dVd + Kp * xe + Kd * Ve;
 % % ax1 = dAdXe * Vd + AdXe * dVd + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Kd) * Ve + Kp * xe);
 s = Ve + Kp * xe;
-ax1 = dAdXe * Vd + AdXe * dVd + Kp * Ve + A_x_inv(Jb, M) * (Mu_x(Jb, M, dJb, C) + Kd) * s;
+ax1 = dAdXe * Vd + AdXe * dVd + Kp * Ve + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Kd) * s ); %+ pinv_JT_x(Jb, M, td)
 a1 = pinv_J_x(Jb, M, ax1 - dJb * qd);
 
 qe = q0 - q;
@@ -56,11 +57,16 @@ qe = q0 - q;
 ax2 = A_v(Z, M) \ ((Mu_v(Z, M, dZ, dM, C) + Bn(1)) * (-pinv_Z(Z, M) * qd) + Z' * Kn(1) * qe);
 a2 = Z * (ax2 - derivative_pinv_Z(Z, M, dZ, dM) * qd);
 
-
-% disturbance observer
-tao_d = y(end) + Y * qd;
+% tao = M * (a1 + a2) + C * qd + G;
+% td = -Y * pinv_J_x(Jb, M, s);
+P = Y * qd;
+tao_d = td + P;
 disp(tao_d);
 tao = M * (a1 + a2) + C * qd + G - tao_d;
+td = Y * (M \ (C * qd + G - tao - P - td));
+
+
+
 
 
 

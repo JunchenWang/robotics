@@ -1,7 +1,7 @@
 function angles = inverse_kin_kuka_robot_kesai_near(robot, T, kesai, ref)
 % T is in meter
 angles = [];
-dist = 1e9;
+dist = inf;
 for cfg1 = -1 : 2 : 1
     for cfg2 =  -1 : 2 : 1
         for cfg3 = -1 : 2 : 1
@@ -14,6 +14,6 @@ for cfg1 = -1 : 2 : 1
         end
     end
 end
-if isempty(angles) || limit_check_kuka(angles)
+if isempty(angles) %|| limit_check_kuka(angles)
     angles = [];
 end

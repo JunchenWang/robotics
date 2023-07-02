@@ -1,4 +1,4 @@
-function dpinvJx = derivative_pinv_Jx(J, M, dJ, dM, x)
+function dpinvJx = derivative_pinv_J_x(J, M, dJ, dM, x)
 tem = M \ J';
 dtem = -(M \ dM) * (M \ J') + (M \ dJ');
 tem2 = J * tem;

@@ -1,17 +1,17 @@
-function kuka_control_simulation_task
+function ODBC_simulation
 u = udpport("byte");
-robot = convert_robot_tree(importrobot('E:\data\URDF\iiwa7\iiwa7.urdf'));
+robot = convert_robot_tree(importrobot('urdf\iiwa7\iiwa7.urdf'));
 robot2 = robot;
-robot2.mass = robot.mass * 1.5;% error
+robot2.mass = 1.2*robot.mass;% error
 n = robot.dof;
 
 kp = 25;
 Kp = kp * eye(6);
-Kd = 80 * eye(6);
+Kd = 20 * eye(6);
 Bn = diag(ones(1,7) * 4);
 Kn = diag(ones(1,7) * 10);
 
-MassMatrix = @(t, y) [eye(n), zeros(n), zeros(n); zeros(n), mass_matrix(robot, y(1:n)), zeros(n); zeros(n, 2 * n), eye(n)];
+MassMatrix = @(t, y) [eye(n), zeros(n, 2 * n); zeros(n), mass_matrix(robot, y(1:n)), zeros(n); zeros(n, 2 * n), eye(n)];
 opts = odeset('Mass',MassMatrix,'OutputFcn',@odeplot);
 y0 = zeros(3*n,1);
 y0(1:n) = [0 75 0 -94 0 -81 0] / 180 * pi;
@@ -19,7 +19,7 @@ ptp(y0(1:n)');
 kesai = cal_kuka_kesai(y0);
 T0 = forward_kin_general(robot, y0);
 refPose = T0;
-refPose(3,4) = refPose(3,4) + 0.5;
+% refPose(3,4) = refPose(3,4) + 0.5;
 % refPose = trvec2tform([0.7 -.1 0.55]);
 tInterval = [0, 10];
 freq = 500;
@@ -28,10 +28,9 @@ tSamples = linspace(tInterval(1), tInterval(2), N);
 [scale,sd,sdd] = trapveltraj([0, 1], N, 'EndTime', tInterval(2));
 [tforms,v,a] = transformtraj(refPose,refPose,tInterval,tSamples, 'TimeScaling', [scale;sd;sdd]);
 
-Y = 1000 * eye(n);
-tao = @(t, y) torque_controller(robot2, tforms,v, a, Kp, Kd, Bn, Kn, kesai, freq, Y, t, y);      
-clear torque_controller;
-control_target = @(t, y) manipulator_dynamics_observer(robot, robot2, tao, @Wrench, Y, t, y); 
+Y = 10 * eye(n);
+tao = @(t, y) DO_controller(robot2, tforms,v, a, Kp, Kd, Bn, Kn, kesai, freq, Y, t, y);      
+control_target = @(t, y) manipulator_dynamics_observer(robot, tao, @Wrench, t, y); 
 torque = [];
 error = [];
 speed = [];
@@ -50,7 +49,7 @@ plot(tt, speed);
     function F = Wrench(t, y)
         F = zeros(6,n);
         if t > 1
-             % F(:,4) = [0, 0, 0, 0, 0, 10]';
+             F(:,4) = [0, 0, 0, 0, 0, 10]';
         end
     end
 
