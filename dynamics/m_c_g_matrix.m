@@ -21,20 +21,22 @@ dJb = zeros(6, n);
 for i = n : -1 : 1
     G(:,:,i) = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
     T = eye(4);
-    dT = zeros(4);
-    pdT = zeros(4,4,n);
+    dT = zeros(4,4);% T对时间的导数
+    pdT = zeros(4,4,n);% T对关节变量的偏导数
     for j = i : -1: 1
         [dAdT, AdT] = derivative_adjoint_T(T, dT);
         J(:,j,i) = AdT * A(j,:)';
         dJ(:,j,i)= dAdT * A(j,:)';
         tform = exp_twist(-A(j,:) * q(j)) * tform_inv(M(:,:,j));
-        Tdtform = T * se_twist(-A(j,:)) * tform;
+        % tform 对qj的偏导数
+        pdtform = se_twist(-A(j,:)) * tform;
+        % 雅克比矩阵对关节变量的偏导数
         for k = 1 : i
             pdAdT = derivative_adjoint_T(T, pdT(:,:,k));
             pdJ(:,j,i,k)= pdAdT * A(j,:)';
             pdT(:,:,k) = pdT(:,:,k) * tform;
             if k == j
-                pdT(:,:,k) = pdT(:,:,k) + Tdtform;
+                pdT(:,:,k) = pdT(:,:,k) + T * pdtform;
             end
         end
         dT = (dT  + T * se_twist(-A(j,:)) * qd(j)) * tform;
@@ -44,8 +46,8 @@ for i = n : -1 : 1
     dMq = dMq + dJ(:,:,i)'*G(:,:,i)*J(:,:,i) + J(:,:,i)'*G(:,:,i)*dJ(:,:,i);
 
     for k = 1 : i
-        drc = -pdT(1:3,1:3,k)'*T(1:3,4) - T(1:3,1:3)'*pdT(1:3,4,k);
-        P(i, k) = -mass(i) * dot(robot.gravity, drc);
+        drc = -pdT(1:3,1:3,k)'*T(1:3,4) - T(1:3,1:3)'*pdT(1:3,4,k); %T的逆是第i个连杆的质心坐标系矩阵
+        P(i, k) = -mass(i) * dot(robot.gravity, drc); %注意负号
     end
     if i == n
         Tcp = tform_inv(T) * ME;
@@ -61,7 +63,7 @@ for i = 1 : n
         g(i) = g(i) + P(j, i);
     end
 end
-% jacobian and its derivatives
+% jacobian and its derivatives in TCP
 Tb = tform_inv(ME);
 adTb = adjoint_T(Tb);
 Jb = adTb * Jb;

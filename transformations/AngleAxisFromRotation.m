@@ -10,5 +10,7 @@ if nargout == 2
     theta = norm(r);
     if theta > 0
         r = r / theta;
+    else
+        r = [0, 0, 1];
     end
 end

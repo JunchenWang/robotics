@@ -29,7 +29,7 @@ tSamples = linspace(tInterval(1), tInterval(2), N);
 [tforms,v,a] = transformtraj(refPose,refPose,tInterval,tSamples, 'TimeScaling', [scale;sd;sdd]);
 
 Y = 10 * eye(n);
-controller = @(t, y) DO_controller(robot2, tforms,v, a, Kp, Kd, Bn, Kn, kesai, freq, Y, t, y);      
+controller = @(t, y) DO_controller2(robot2, tforms,v, a, Kp, Kd, Bn, Kn, kesai, freq, Y, t, y);      
 control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @Wrench, t, y); 
 torque = [];
 error = [];
@@ -49,7 +49,7 @@ plot(tt, speed);
     function F = Wrench(t, y)
         F = zeros(6,n);
         if t > 1
-             F(:,4) = [0, 0, 0, 0, 0, 10]';
+             % F(:,4) = [0, 0, 0, 0, 0, 10]';
         end
     end
 

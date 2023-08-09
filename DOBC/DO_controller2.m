@@ -1,54 +1,56 @@
-function [tao, td] = DO_controller(robot, Td, w_v_d, alpha_a_d, Kp, Kd, Bn, Kn, kesai, freq, Y, t, y)
+function [tao, td] = DO_controller2(robot, Td, w_v_d, alpha_a_d, Kp, Kd, Bn, Kn, kesai, freq, Y, t, y)
 % Xd is desired motion in task space
 cnt = round(t * freq + 1);
 n = robot.dof;
 q = y(1:n);% + 1e-3 * rand(1, 7); % noise
 qd = y(n + 1: 2 * n);% + 1e-3 * rand(1, 7); %noise
+[M, C, G, Jb, dJb, dM, dX, X] = m_c_g_matrix(robot,q,qd);
+R = X(1:3,1:3);
+p = X(1:3,4);
+Vb = Jb * qd;
+wb = Vb(1:3);
+v = R * Vb(4:6);
+Jh = [eye(3), zeros(3); zeros(3), R];
+dJh = [zeros(3), zeros(3); zeros(3), dX(1:3,1:3)];
+dJb = dJh * Jb + Jh * dJb;
+Jb = Jh * Jb;
 td = y(2 * n + 1 : end);
 if size(Td, 3) > 1
     Xd = Td(:,:,cnt);
     Rd = Xd(1:3, 1:3);
+    pd = Xd(1:3, 4);
     %% 期望姿态，速度和加速度转化到Xd下
-    wd = Rd' * w_v_d(1:3, cnt);
-    vd = Rd' * w_v_d(4:6, cnt);
-    alphad = Rd' * alpha_a_d(1:3, cnt);
-    ad = Rd' * alpha_a_d(4:6, cnt);
+    wd = R' * w_v_d(1:3, cnt);
+    vd = w_v_d(4:6, cnt);
+    alphad = R' * alpha_a_d(1:3, cnt);
+    ad = alpha_a_d(4:6, cnt);
 else
     Xd = Td;
     Rd = Xd(1:3, 1:3);
+    pd = Xd(1:3, 4);
     %% 期望姿态，速度和加速度转化到Xd下
-    wd = Rd' * w_v_d(1:3);
-    vd = Rd' * w_v_d(4:6);
-    alphad = Rd' * alpha_a_d(1:3);
-    ad = Rd' * alpha_a_d(4:6);
+    wd = R' * w_v_d(1:3);
+    vd = w_v_d(4:6);
+    alphad = R' * alpha_a_d(1:3);
+    ad = alpha_a_d(4:6);
 end
 q0 = inverse_kin_kuka_robot_kesai_near(robot, Xd, kesai, q)';
 if isempty(q0)
     error('no inverse');
 end
 Vd = [wd;vd];
-dVd = [alphad;ad - cross(wd, vd)];
-dXd = Xd * se_twist(Vd);
-%% 实际姿态，速度在X下
-% [dJb, Jb, dX, X] = derivative_jacobian_matrix(robot, q, qd);
-% M = mass_matrix(robot, q);
-[M, C, G, Jb, dJb, dM, dX, X] = m_c_g_matrix(robot,q,qd);
+dVd = [alphad - cross(wb, wd) ;ad];
+xe = [logR(R'*Rd)'; pd - p];
+dxe = Vd - [wb;v];
+
 Z = null_z(Jb);
 dZ = derivative_null_z(Jb, dJb);
 
-V = Jb * qd;
-[dInvX, invX] = derivative_tform_inv(X, dX);
 
-Xe = invX * Xd;
-xe = logT(Xe)';
-dXe = dInvX * Xd + invX * dXd;
-[dAdXe, AdXe] = derivative_adjoint_T(Xe, dXe);
-Ve = AdXe * Vd - V;
-
-% ax1 = dAdXe * Vd + AdXe * dVd + Kp * xe + Kd * Ve;
-ax1 = dAdXe * Vd + AdXe * dVd + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Kd) * Ve + Kp * xe); % PD+
-% s = Ve + Kp * xe;
-% ax1 = dAdXe * Vd + AdXe * dVd + Kp * Ve + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Kd) * s ); 
+% ax1 = dVd + Kp * xe + Kd * dxe;
+% ax1 = dVd + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Kd) * dxe + Kp * xe); % PD+
+s = dxe + Kp * xe;
+ax1 = dVd + Kp * dxe + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Kd) * s ); 
 a1 = pinv_J_x(Jb, M, ax1 - dJb * qd);
 
 qe = q0 - q;

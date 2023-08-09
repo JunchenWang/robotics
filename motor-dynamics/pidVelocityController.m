@@ -1,4 +1,5 @@
 function u = pidVelocityController(t, y, yd, Kp, Ki, Kd)
+% 待修改！通过引入状态变量来避免这里数值积分。2023年7月5日
 % yd(1) 期望速度; yd(2) 期望加速度
 persistent sum;
 persistent pret;
