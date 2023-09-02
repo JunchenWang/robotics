@@ -40,6 +40,8 @@ for j = 1 : n
             m_e = robot_tree.Bodies{i}.Mass;
             T_e = [eye(3), robot_tree.Bodies{i}.CenterOfMass'; 0 0 0 1];
             I = getInertiaMatrix(robot_tree.Bodies{i}.Inertia);
+            % matlab读入urdf时，将惯量矩阵转到了link坐标系下，而非质心坐标系，所以要转换一下
+            % urdf里的惯量矩阵是关于质心坐标系的
             I_e = transform_com_inertia_matrix(I, m_e, T_e);
             ME = Tb(:,:,dof) * JointTransform;
             T = ME * T_e;
@@ -59,6 +61,8 @@ for j = 1 : n
         com(dof,:) = robot_tree.Bodies{i}.CenterOfMass;
         Tb(:,:,dof) = [eye(3), robot_tree.Bodies{i}.CenterOfMass'; 0 0 0 1];
         I = getInertiaMatrix(robot_tree.Bodies{i}.Inertia);
+        % matlab读入urdf时，将惯量矩阵转到了link坐标系下，而非质心坐标系，所以要转换一下
+        % urdf里的惯量矩阵是关于质心坐标系的
         inertia(:,:,dof) = transform_com_inertia_matrix(I, mass(dof), Tb(:,:,dof));
         M(:,:,dof) = JointTransform * Tb(:,:,dof);
         Tb(:,:,dof) = tform_inv(Tb(:,:,dof));
