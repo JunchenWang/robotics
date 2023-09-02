@@ -1,5 +1,5 @@
 function test_task_space_dynamics
-robot = convert_robot_tree(importrobot('URDF\iiwa7\iiwa7.urdf'));
+robot = convert_robot_tree2(importrobot('URDF\iiwa7\iiwa7.urdf'));
 q = -pi + 2 * pi * rand(1,7);
 delta = 1e-8;
 qd = -pi + 2 * pi * rand(1,7);

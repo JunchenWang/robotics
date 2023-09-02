@@ -5,7 +5,7 @@ robot = importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302
 showdetails(robot);
 flange = robot.Bodies{robot.NumBodies}.Name;
 % flange = 'Bracelet_Link';
-my_robot = convert_robot_tree(robot,flange);
+my_robot = convert_robot_tree2(robot,flange);
 [R, ~] = qr(rand(3));
 my_robot.TCP = [R, [0, 0, 0.213]'; 0 0 0 1];
 robot.Gravity = [0, 0, -9.8];

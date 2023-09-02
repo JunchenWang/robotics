@@ -1,6 +1,7 @@
 function [Mq, C, g, Jb, dJb, dMq, dTcp, Tcp] = m_c_g_matrix(robot, q, qd)
 % Jb, dJb expressed in TCP
 mass = robot.mass;
+com = robot.com;
 inertia = robot.inertia;
 A = robot.A;
 M = robot.M;
@@ -19,7 +20,7 @@ g = zeros(n,1);
 Jb = zeros(6, n);
 dJb = zeros(6, n);
 for i = n : -1 : 1
-    G(:,:,i) = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
+    G(:,:,i) = spatial_inertia_matrix(inertia(:,:,i),mass(i), com(i,:));
     T = eye(4);
     dT = zeros(4,4);% T对时间的导数
     pdT = zeros(4,4,n);% T对关节变量的偏导数
@@ -44,30 +45,25 @@ for i = n : -1 : 1
     end
     Mq = Mq + J(:,:,i)'*G(:,:,i)*J(:,:,i);
     dMq = dMq + dJ(:,:,i)'*G(:,:,i)*J(:,:,i) + J(:,:,i)'*G(:,:,i)*dJ(:,:,i);
-
     for k = 1 : i
-        drc = -pdT(1:3,1:3,k)'*T(1:3,4) - T(1:3,1:3)'*pdT(1:3,4,k); %T的逆是第i个连杆的质心坐标系矩阵
+        drc = -pdT(1:3,1:3,k)'*(T(1:3,4) - com(i,:)') - T(1:3,1:3)'*pdT(1:3,4,k); %T的逆是第i个连杆的质心坐标系矩阵
         P(i, k) = -mass(i) * dot(robot.gravity, drc); %注意负号
     end
     if i == n
         Tcp = tform_inv(T) * ME;
         dTcp = -tform_inv(T) * dT * tform_inv(T) * ME;
-        Jb = J(:,:,n);
-        dJb = dJ(:,:,n);
+        adTb = adjoint_T(tform_inv(ME));
+        Jb = adTb * J(:,:,n);
+        dJb = adTb * dJ(:,:,n);
     end
 end
-
+% g matrix
 for i = 1 : n
     for j = 1 : n
         pdMq(:,:,i) = pdMq(:,:,i) + pdJ(:,:,j,i)'*G(:,:,j)*J(:,:,j) + J(:,:,j)'*G(:,:,j)*pdJ(:,:,j,i);
         g(i) = g(i) + P(j, i);
     end
 end
-% jacobian and its derivatives in TCP
-Tb = tform_inv(ME);
-adTb = adjoint_T(Tb);
-Jb = adTb * Jb;
-dJb = adTb * dJb;
 % C matrix
 for k = 1 : n
     for j = 1 : n

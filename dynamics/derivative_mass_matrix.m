@@ -2,6 +2,7 @@ function [dMq, Mq, dJ, J] = derivative_mass_matrix(robot, q, qd)
 % J is expressed in link com, different with jacobian_matrix
 mass = robot.mass;
 inertia = robot.inertia;
+com = robot.com;
 A = robot.A;
 M = robot.M;
 n = robot.dof;
@@ -10,7 +11,7 @@ Mq = zeros(n, n);
 dJ = zeros(6, n, n);
 dMq = zeros(n, n);
 for i = n : -1 : 1
-   G = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
+   G = spatial_inertia_matrix(inertia(:,:,i),mass(i), com(i,:));
    T = eye(4);
    dT = zeros(4);
    for j = i : -1: 1

@@ -28,15 +28,14 @@ A = zeros(n,6);
 mass = zeros(n, 1);
 inertia = zeros(3,3,n);
 com = zeros(n, 3);
-ME = eye(4);
 Base = eye(4);
 for j = 1 : n
     i = bodylist{j};
     JointTransform = Base * robot_tree.Bodies{i}.Joint.JointToParentTransform;
     if strcmp(robot_tree.Bodies{i}.Joint.Type, 'fixed') == 1
         Base = JointTransform;
-        if dof > 0
-            m2 = robot_tree.Bodies{i}.Mass;
+        m2 = robot_tree.Bodies{i}.Mass;
+        if dof > 0 && m2 > 0
             Tcom2 = [eye(3), robot_tree.Bodies{i}.CenterOfMass'; 0 0 0 1];
             I2 = getInertiaMatrix(robot_tree.Bodies{i}.Inertia);
             I2 = transform_com_inertia_matrix(I2, m2, Tcom2);
@@ -45,7 +44,6 @@ for j = 1 : n
             rho = m2 / (mass(dof) + m2);
             com(dof,:) = rho * T(1:3,4)' + (1 - rho) * com(dof,:);
             mass(dof) = mass(dof) + m2;
-            ME = JointTransform;
         end
     else
         dof = dof + 1;
@@ -67,7 +65,7 @@ robot.mass = mass(1:dof);%质量
 robot.inertia = inertia(:,:,1:dof);% 惯性矩阵
 robot.A = A(1:dof,:);% screw axis
 robot.M = M(:,:,1:dof);% relation at zero position
-robot.ME = ME;% end-effector frame
+robot.ME = Base;% end-effector frame
 robot.com = com(1:dof,:); % center of mass
 robot.gravity = [0, 0, -9.8]; % gravity acceleration in base frame
 robot.TCP = eye(4);

@@ -1,6 +1,6 @@
 function test_re_pe_derivative
 % robot = convert_robot_tree(importrobot('E:\data\URDF\iiwa7\iiwa7.urdf'));
-robot = convert_robot_tree(importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf'));
+robot = convert_robot_tree2(importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf'));
 [R, ~] = qr(rand(3));
 robot.TCP = [R, [0, 0, 0.213]'; 0 0 0 1];
 n = robot.dof;

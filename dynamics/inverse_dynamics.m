@@ -3,10 +3,10 @@ function tao = inverse_dynamics(robot, q, qd, qdd, F_ME)
 % note that the difference with inverse_dynamics_extforce
 mass = robot.mass;
 inertia = robot.inertia;
+com = robot.com;
 A = robot.A;
 M = robot.M;
 ME = robot.ME * robot.TCP;
-%jtMechanics = robot.jtMechanics;
 n = robot.dof;
 nu0 = zeros(6, 1);
 dnu0 = [0, 0, 0, -robot.gravity]';
@@ -24,7 +24,7 @@ end
 F = F_ME;
 T = tform_inv(ME);
 for i = n : -1 : 1
-    G = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
+    G = spatial_inertia_matrix(inertia(:,:,i),mass(i), com(i,:));
     F = adjoint_T(T)'* F + G * dnu(:,i) - adjoint_twist(nu(:,i)')'*(G*nu(:,i));
     tao(i) = F'*A(i,:)'; %+ jtMechanics(i, 1) * qd(i) + jtMechanics(i, 2) * (q(i) - jtMechanics(i, 3)); % consider joint mechanics
     T =  exp_twist(-A(i,:)*q(i))*tform_inv(M(:,:,i));

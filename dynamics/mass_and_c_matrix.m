@@ -1,6 +1,7 @@
 function [Mq, C] = mass_and_c_matrix(robot, q, qd)
 mass = robot.mass;
 inertia = robot.inertia;
+com = robot.com;
 A = robot.A;
 M = robot.M;
 n = robot.dof;
@@ -11,7 +12,7 @@ dMq = zeros(n, n, n);
 C = zeros(n, n);
 G = zeros([6, 6, n]);
 for i = n : -1 : 1
-    G(:,:,i) = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
+    G = spatial_inertia_matrix(inertia(:,:,i),mass(i), com(i,:));
     T = eye(4);
     dT = zeros([4,4,n]);
     for j = i : -1: 1

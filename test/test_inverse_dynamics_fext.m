@@ -1,6 +1,6 @@
 % robot = read_dynamics_file('F:\robotics\urdf\iiwa7\dynamics.txt');
 % robot = convert_robot_tree(importrobot('E:\data\URDF\iiwa7\iiwa7.urdf'));
-robot = convert_robot_tree(importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf'));
+robot = convert_robot_tree2(importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf'));
 % robot = convert_robot_tree(importrobot('abbIrb120.urdf'));
 [R, ~] = qr(rand(3));
 robot.TCP = [R, [0, 0, 0.213]'; 0 0 0 1];

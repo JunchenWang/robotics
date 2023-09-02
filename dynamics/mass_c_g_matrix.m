@@ -5,6 +5,7 @@ inertia = robot.inertia;
 A = robot.A;
 M = robot.M;
 ME = robot.ME * robot.TCP;
+com = robot.com;
 n = robot.dof;
 J = zeros(6, n, n);
 Mq = zeros(n, n);
@@ -17,7 +18,7 @@ g = zeros(n,1);
 Jb = zeros(6, n);
 dJb = zeros(6, n);
 for i = n : -1 : 1
-    G(:,:,i) = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
+    G(:,:,i) = spatial_inertia_matrix(inertia(:,:,i),mass(i), com(i,:));
     T = eye(4);
     dT = zeros([4,4,n]);
     for j = i : -1: 1
@@ -35,7 +36,7 @@ for i = n : -1 : 1
         T = T * tform;
     end
     for k = 1 : i
-        drc = -dT(1:3,1:3,k)'*T(1:3,4) - T(1:3,1:3)'*dT(1:3,4,k);
+        drc = -dT(1:3,1:3,k)'*(T(1:3,4) - com(i,:)') - T(1:3,1:3)'*dT(1:3,4,k);
         P(i, k) = -mass(i) * dot(robot.gravity, drc);
     end
     Mq = Mq + J(:,:,i)'*G(:,:,i)*J(:,:,i);

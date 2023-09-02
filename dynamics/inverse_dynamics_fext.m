@@ -24,15 +24,13 @@ for i = 1 : n
 end
 T = eye(4); 
 F = zeros(6,1);
-Tbc = eye(4);
 for i = n : -1 : 1
      if i < n
-        Tbc(1:3,4) = com(i,:);
-        extf = adjoint_T(Tbc)' * fext(:,i);
+        extf = fext(:,i);
      else
         extf = adjoint_T(tform_inv(ME))' * fext(:,i);
      end
-    G = [inertia(:,:,i), zeros(3);zeros(3), mass(i) * eye(3)];
+    G = spatial_inertia_matrix(inertia(:,:,i),mass(i), com(i,:));
     F = adjoint_T(T)'* F + G * dnu(:,i) - adjoint_twist(nu(:,i)')'*(G*nu(:,i)) - extf;
     tao(i) = F'*A(i,:)';
     T =  exp_twist(-A(i,:)*q(i))*tform_inv(M(:,:,i));
