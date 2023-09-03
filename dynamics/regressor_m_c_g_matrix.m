@@ -1,4 +1,4 @@
-function [Y, Mq, C, g, Jb, dJb, dMq, dTcp, Tcp] = regressor_m_c_g_matrix(robot, q, qd, a, v)
+function [YTr, Mq, C, g, Jb, dJb, dMq, dTcp, Tcp] = regressor_m_c_g_matrix(robot, q, qd, a, v, r)
 % paper: On the closed form computation of the dynamic matrices and their differentiations
 % 注意，C矩阵和m_c_g_matrix不同，但都满足 dM = C + C'
 n = robot.dof;
@@ -11,7 +11,8 @@ ME = robot.ME * robot.TCP;
 J = zeros(6, n, n);
 dJ = zeros(6, n, n);
 gravity = [0;0;0;-robot.gravity'];
-Y = zeros(n,1);
+YTr = zeros(10 * n, 1);
+% Y = zeros(n, 1);
 C = zeros(n,n);
 Mq = zeros(n, n);
 g = zeros(n, 1);
@@ -41,7 +42,8 @@ for i = 1 : n
     C = C + Jk' * ((Gk * adk - adk' * Gk) * Jk + Gk * dJk);
     g = g + Jk' * Gk * Adk * gravity;
     alpha = Jk * a + adk * Jk * v + dJk * v +  rk;
-    Y = Y + Jk' * (A_matrix(alpha) - adk' * A_matrix(Jk * v)) * pik';
+    YTr((i - 1) * 10 + 1 : 10 * i) = (A_matrix(alpha) - adk' * A_matrix(Jk * v))' * Jk * r;
+    % Y = Y + Jk' * (A_matrix(alpha) - adk' * A_matrix(Jk * v)) * pik';
     if i == n
         Tcp = tform_inv(T) * ME;
         dTcp = -tform_inv(T) * dT * tform_inv(T) * ME;
@@ -50,20 +52,20 @@ for i = 1 : n
         dJb = adTb * dJk;
     end
 end
-
-[Mq2, C2, g2, Jb2, dJb2, dMq2, dTcp2, Tcp2] = m_c_g_matrix(robot, q, qd);
-
-disp(norm(Y - Mq * a - C * v - g, 'fro'));
-disp(norm(Mq2 - Mq, 'fro'));
-disp(norm(C2 * qd - C * qd));
-disp(norm(g2 - g));
-disp(norm(Jb - Jb2, 'fro'));
-disp(norm(dJb - dJb2, 'fro'));
-disp(norm(dMq2 - dMq, 'fro'));
-disp(norm(dTcp2 - dTcp, 'fro'));
-disp(norm(Tcp2 - Tcp, 'fro'));
-disp(norm(dMq - C - C', 'fro'));
-disp(norm(dMq2 - C2 - C2', 'fro'));
+% 
+% [Mq2, C2, g2, Jb2, dJb2, dMq2, dTcp2, Tcp2] = m_c_g_matrix(robot, q, qd);
+% 
+% disp(norm(Y - Mq * a - C * v - g, 'fro'));
+% disp(norm(Mq2 - Mq, 'fro'));
+% disp(norm(C2 * qd - C * qd));
+% disp(norm(g2 - g));
+% disp(norm(Jb - Jb2, 'fro'));
+% disp(norm(dJb - dJb2, 'fro'));
+% disp(norm(dMq2 - dMq, 'fro'));
+% disp(norm(dTcp2 - dTcp, 'fro'));
+% disp(norm(Tcp2 - Tcp, 'fro'));
+% disp(norm(dMq - C - C', 'fro'));
+% disp(norm(dMq2 - C2 - C2', 'fro'));
 % disp(norm(C - C2, 'fro'));
 end
 
