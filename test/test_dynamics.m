@@ -1,6 +1,6 @@
 function test_dynamics
-% robot = importrobot('E:\data\URDF\iiwa7\iiwa7.urdf');
-robot = importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf');
+robot = importrobot('URDF\iiwa7\iiwa7.urdf');
+% robot = importrobot('E:\data\URDF\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf');
 % robot = importrobot('kinovaGen3V12.urdf');
 showdetails(robot);
 flange = robot.Bodies{robot.NumBodies}.Name;
