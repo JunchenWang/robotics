@@ -27,7 +27,7 @@ N = tspan(2) * freq + 1;
 pp = pp{1};
 p = @(t) desired_joint_pos(t, qs, qs, pp, fnder(pp, 1), fnder(pp, 2));
 
-Y = 10 * eye(10 *n);
+Y = 1 * eye(10 *n);
 A = 20 * eye(n);
 K = 20 * eye(n);
 controller = @(t, y) adaptive_controller(robot2, p, Y, A, K, t, y);

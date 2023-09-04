@@ -18,8 +18,8 @@ Mq = zeros(n, n);
 g = zeros(n, 1);
 dMq = zeros(n, n);
 for i = 1 : n
-    pik = [mass(i), mass(i) * com(i,:), inertia(1,1,i), inertia(2,2,i), inertia(3,3,i),...
-                inertia(1,2,i), inertia(1,3,i), inertia(2,3,i)];
+    % pik = [mass(i), mass(i) * com(i,:), inertia(1,1,i), inertia(2,2,i), inertia(3,3,i),...
+                % inertia(1,2,i), inertia(1,3,i), inertia(2,3,i)];
     Gk = spatial_inertia_matrix(inertia(:,:,i),mass(i), com(i,:));
     T = eye(4);
     dT = zeros(4,4);% T对时间的导数a
