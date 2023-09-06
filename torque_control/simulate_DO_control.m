@@ -1,4 +1,4 @@
-function simulate_torque_control
+function simulate_DO_control
 
 port = udpport("byte");
 robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));

@@ -1,4 +1,4 @@
-function [YTr, Mq, C, g, Jb, dJb, dMq, dTcp, Tcp] = regressor_m_c_g_matrix(robot, q, qd, a, v, r)
+function [Y, YTr, Mq, C, g, Jb, dJb, dMq, dTcp, Tcp] = regressor_m_c_g_matrix(robot, q, qd, a, v, r)
 % paper: On the closed form computation of the dynamic matrices and their differentiations
 % 注意，C矩阵和m_c_g_matrix不同，但都满足 dM = C + C'
 n = robot.dof;
@@ -12,7 +12,7 @@ J = zeros(6, n, n);
 dJ = zeros(6, n, n);
 gravity = [0;0;0;-robot.gravity'];
 YTr = zeros(10 * n, 1);
-% Y = zeros(n, 1);
+Y = zeros(n, 10 * n);
 C = zeros(n,n);
 Mq = zeros(n, n);
 g = zeros(n, 1);
@@ -42,8 +42,8 @@ for i = 1 : n
     C = C + Jk' * ((Gk * adk - adk' * Gk) * Jk + Gk * dJk);
     g = g + Jk' * Gk * Adk * gravity;
     alpha = Jk * a + adk * Jk * v + dJk * v +  rk;
-    YTr((i - 1) * 10 + 1 : 10 * i) = (A_matrix(alpha) - adk' * A_matrix(Jk * v))' * Jk * r;
-    % Y = Y + Jk' * (A_matrix(alpha) - adk' * A_matrix(Jk * v)) * pik';
+    Y(:, (i - 1) * 10 + 1 : 10 * i) = Jk' * (A_matrix(alpha) - adk' * A_matrix(Jk * v));
+    YTr((i - 1) * 10 + 1 : 10 * i) = Y(:, (i - 1) * 10 + 1 : 10 * i)' * r;
     if i == n
         Tcp = tform_inv(T) * ME;
         dTcp = -tform_inv(T) * dT * tform_inv(T) * ME;

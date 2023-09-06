@@ -89,7 +89,7 @@ qed = dqd - qd;
 r = qed + A * qe;
 v = dqd + A * qe;
 a = dqdd + A * qed;
-[YTr, M, C, G, Jb, dJb, dM, dX, X] = regressor_m_c_g_matrix(robot,q,qd,a,v,r);
+[~, YTr, M, C, G, Jb, dJb, dM, dX, X] = regressor_m_c_g_matrix(robot,q,qd,a,v,r);
 dp = Y * YTr;
 tao = M *a + C * v + G + K * r;
 end
@@ -112,7 +112,7 @@ end
 
 
 function F = Wrench(t, y)
-n = size(y,1) / 3;
+n = size(y,1) / 12;
 F = zeros(6,n);
 if t > 1
     % F(:,4) = [0, 0, 0, 0, 0, 10]';
