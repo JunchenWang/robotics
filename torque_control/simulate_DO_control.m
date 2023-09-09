@@ -6,13 +6,13 @@ robot2 = robot;
 robot2.mass = 1.2*robot.mass;% error
 n = robot.dof;
 
-Kx = 25 * eye(6);
+Kx = 20 * eye(6);
 Bx = 20 * eye(6);
-Bn = diag(ones(1,n) * 4);
+Bn = diag(ones(1,n) * 5);
 Kn = diag(ones(1,n) * 5);
 tspan = [0, 10];
 MassMatrix = @(t, y) [eye(n), zeros(n, 2 * n); zeros(n), mass_matrix(robot, y(1:n)), zeros(n); zeros(n, 2 * n), eye(n)];
-opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot(t, y, flag, port));
+opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot(t, y, flag, port, robot));
 
 y0 = zeros(3*n,1);
 y0(1:n) = [0 75 0 -94 0 -81 0] / 180 * pi;
@@ -20,7 +20,7 @@ ptp(port, y0(1:n)');
 kesai = cal_kuka_kesai(y0);
 Ts = forward_kin_general(robot, y0);
 Te = Ts;
-% Te(3,4) = Te(3,4) + 0.5;
+Te(3,4) = Te(3,4) + 0.5;
 
 freq = 500;
 N = tspan(2) * freq + 1;
@@ -30,39 +30,62 @@ p = @(t) desired_task_pos(t, Ts, Te, pp, fnder(pp, 1), fnder(pp, 2));
 
 Y = 10 * eye(n);
 controller = @(t, y) DO_controller(robot2, p, Kx, Bx, Bn, Kn, kesai, Y, t, y);
-control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @Wrench, t, y);
+control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @(t, y) Wrench(t, y, robot), t, y);
 [t,y] = ode15s(control_target,tspan,y0,opts);
 cnt = length(t);
 torque = zeros(cnt, n);
-error = zeros(cnt, 6);
+pos_error = zeros(cnt, 1);
+rot_error = zeros(cnt, 1); 
 for i = 1 : cnt
     Xd = p(t(i));
     X = forward_kin_general(robot, y(i, 1:n)) ;
-    error(i,:) = twist_dist(X, Xd);
+    pos_error(i) = norm(Xd(1:3,4) - X(1:3,4));
+    rot_error(i) = norm(logR(X(1:3,1:3)' * Xd(1:3,1:3)));
     torque(i,:) = controller(t(i), y(i,:)');
 end
-disp(error(end,:));
+disp(pos_error(end));
 figure;
-plot(t, y(:,2 * n + 1:end)); % disturbance
+plot(t, y(:,2 * n + 1:end),'-', 'LineWidth', 2); % disturbance
+xlabel("$t$/s", 'interpreter','latex');
+ylabel('$\tau_d$/Nm', 'interpreter','latex');
+% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
+xticks([0,1,2,3,4,5,6,7,8,9,10]);
+set(gca,'FontSize', 32);
+lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
+fontsize(lg,18,'points')
+set(gcf,'Position',[100 100 1200 800]);
 figure;
-plot(t, torque);
+plot(t, torque,'-', 'LineWidth', 2);
+xlabel("$t$/s", 'interpreter','latex');
+ylabel('$\tau$/Nm', 'interpreter','latex');
+% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
+xticks([0,1,2,3,4,5,6,7,8,9,10]);
+set(gca,'FontSize', 32);
+lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
+fontsize(lg,18,'points')
+set(gcf,'Position',[100 100 1200 800]);
 figure;
-plot(t, sqrt(sum(error(:,4:end).^2,2)));
+plot(t, rot_error,'-', 'LineWidth', 2);
+xlabel("$t$/s", 'interpreter','latex');
+ylabel('$||r_e||$/rad', 'interpreter','latex');
+% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
+xticks([0,1,2,3,4,5,6,7,8,9,10]);
+set(gca,'FontSize', 32);
+% lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
+% fontsize(lg,18,'points')
+set(gcf,'Position',[100 100 1200 800]);
 figure;
-plot(t, y(:,n + 1: 2 * n)); % speed
-
-
+plot(t, pos_error,'-', 'LineWidth', 2);
+xlabel("$t$/s", 'interpreter','latex');
+ylabel('$||p_e||$/m', 'interpreter','latex');
+% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
+xticks([0,1,2,3,4,5,6,7,8,9,10]);
+set(gca,'FontSize', 32);
+% lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
+% fontsize(lg,18,'points')
+set(gcf,'Position',[100 100 1200 800]);
 end
 
-function ret = odeplot(t, y, flag, port)
-if strcmp(flag, 'init') == 1
-elseif isempty(flag)
-    n = size(y,1) / 3;
-    setJoints(port, y(1:n, end));
-else
-end
-ret = 0;
-end
 
 function [Td, vel, acc] = desired_task_pos(t, Ts, Te, pp, ppd, ppdd)
 % line with 
@@ -159,12 +182,22 @@ yd(2 * n + 1 : end) = td;
 end
 
 
-function F = Wrench(t, y)
-n = size(y,1) / 3;
-F = zeros(6,n);
+function F = Wrench(t, y, robot)
+F = zeros(6, robot.dof);
 if t > 1
-    % F(:,4) = [0, 0, 0, 0, 0, 10]';
+    F(:,4) = [0, 0, 0, 0, 0, 10]';
+    F(:,7) = [0, 0, 0, 0, 10, 0]';
 end
+end
+
+
+function ret = odeplot(t, y, flag, port, robot)
+if strcmp(flag, 'init') == 1
+elseif isempty(flag)
+    setJoints(port, y(1:robot.dof, end));
+else
+end
+ret = 0;
 end
 
 function ptp(port, jts, vel)
@@ -185,15 +218,12 @@ end
 end
 
 function setJoints(port, jt)
-cmd = sprintf('robot;%f;%f;%f;%f;%f;%f;%f;', jt(1), jt(2), jt(3), jt(4), jt(5)...
-    ,jt(6), jt(7));
+cmd = 'robot;' + join(string(jt),';') + ';';
 writeline(port,cmd,"127.0.0.1",7755);
 end
 
 function joints = queryJoints(port)
-% ";" 表示查询关节角
 writeline(port,"robot;","127.0.0.1",7755);
-s = readline(port);
-joints = sscanf(s,'%f;%f;%f;%f;%f;%f;%f;')';
-joints = mod(joints + pi, 2*pi) - pi;
+s = split(readline(port), ';');
+joints = double(s(1:end-1))';
 end

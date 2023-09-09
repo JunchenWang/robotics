@@ -10,7 +10,7 @@ tspan = [0, 10];
 MassMatrix = @(t, y) [eye(n), zeros(n, n), zeros(n, 10 * n); 
                       zeros(n), mass_matrix(robot, y(1:n)), zeros(n, 10 * n); 
                       zeros(10 * n, 2 * n), eye(10 * n)];
-opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot(t, y, flag, port));
+opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot(t, y, flag, port, robot));
 
 y0 = [zeros(2*n,1); get_dynamics(robot2)];
 y0(1:n) = [0 75 0 -94 0 -81 0] / 180 * pi;
@@ -25,13 +25,13 @@ freq = 500;
 N = tspan(2) * freq + 1;
 [~,~,~,~,pp] = trapveltraj([0, 1], N, 'EndTime', tspan(2));
 pp = pp{1};
-p = @(t) desired_joint_pos(t, qs, qs, pp, fnder(pp, 1), fnder(pp, 2));
+p = @(t) desired_joint_pos(t, qs, qe, pp, fnder(pp, 1), fnder(pp, 2));
 
-Y = 1 * eye(10 *n);
-A = 20 * eye(n);
-K = 20 * eye(n);
-controller = @(t, y) adaptive_controller(robot2, p, Y, A, K, t, y);
-control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @Wrench, t, y);
+gain = 1 * eye(10 *n);
+A = 50 * eye(n);
+K = 50 * eye(n);
+controller = @(t, y) adaptive_controller(robot2, p, gain, A, K, t, y);
+control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @(t,y) Wrench(t,y,robot), t, y);
 [t,y] = ode15s(control_target,tspan,y0,opts);
 cnt = length(t);
 torque = zeros(cnt, n);
@@ -42,27 +42,46 @@ for i = 1 : cnt
     error(i,:) = X - Xd;
     torque(i,:) = controller(t(i), y(i,:)');
 end
-disp(error(end,:));
+delta = forward_kin_general(robot, Xd) - forward_kin_general(robot, X);
+disp(norm(delta(1:3,4)));
 figure;
-plot(t, y(:,2 * n + 1 : end)); % disturbance
+plot(t, torque,'-', 'LineWidth', 2);
+xlabel("$t$/s", 'interpreter','latex');
+ylabel('$\tau$/Nm', 'interpreter','latex');
+% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
+xticks([0,1,2,3,4,5,6,7,8,9,10]);
+set(gca,'FontSize', 32);
+lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
+fontsize(lg,18,'points')
+set(gcf,'Position',[100 100 1200 800]);
 figure;
-plot(t, torque);
+plot(t, error,'-', 'LineWidth', 2);
+xlabel("$t$/s", 'interpreter','latex');
+ylabel('$q_e$/rad', 'interpreter','latex');
+% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
+xticks([0,1,2,3,4,5,6,7,8,9,10]);
+set(gca,'FontSize', 32);
+lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
+fontsize(lg,18,'points')
+set(gcf,'Position',[100 100 1200 800]);
 figure;
-plot(t, error);
+plot(t, y(:,n + 1: 2 * n),'-', 'LineWidth', 2); % speed
+xlabel("$t$/s", 'interpreter','latex');
+ylabel('$\dot{q}$/(rad s$^{-1}$)', 'interpreter','latex');
+% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
+xticks([0,1,2,3,4,5,6,7,8,9,10]);
+set(gca,'FontSize', 32);
+lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
+fontsize(lg,18,'points')
+set(gcf,'Position',[100 100 1200 800]);
 figure;
-plot(t, y(:,n + 1: 2 * n)); % speed
-
-
-end
-
-function ret = odeplot(t, y, flag, port)
-if strcmp(flag, 'init') == 1
-elseif isempty(flag)
-    n = size(y,1) / 12;
-    setJoints(port, y(1:n, end));
-else
-end
-ret = 0;
+plot(t, y(:,2*n + 1: end),'-', 'LineWidth', 2);
+xlabel("$t$/s", 'interpreter','latex');
+ylabel('$\Theta$', 'interpreter','latex');
+% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
+xticks([0,1,2,3,4,5,6,7,8,9,10]);
+set(gca,'FontSize', 32);
+set(gcf,'Position',[100 100 1200 800]);
 end
 
 
@@ -76,22 +95,21 @@ qd = (qe - qs)*sd;
 qdd = (qe - qs)*sdd;
 end
 
-function [tao, dp] = adaptive_controller(robot, desired_pos, Y, A, K, t, y)
+function [tao, dp] = adaptive_controller(robot, desired_pos, gain, A, K, t, y)
 % Xd is desired motion in task space
 n = robot.dof;
 q = y(1:n);% + 1e-3 * rand(1, 7); % noise
 qd = y(n + 1: 2 * n);% + 1e-3 * rand(1, 7); %noise
 param = y(2*n + 1 : end);
-robot = update_dynamics(robot, param);
 [dq, dqd, dqdd] = desired_pos(t);
 qe = dq - q;
 qed = dqd - qd;
 r = qed + A * qe;
 v = dqd + A * qe;
 a = dqdd + A * qed;
-[~, YTr, M, C, G, Jb, dJb, dM, dX, X] = regressor_m_c_g_matrix(robot,q,qd,a,v,r);
-dp = Y * YTr;
-tao = M *a + C * v + G + K * r;
+[Y, YTr] = regressor_matrix(robot,q,qd,a,v,r);
+dp = gain * YTr;
+tao = Y * param + K * r;
 end
 
 
@@ -111,12 +129,22 @@ yd(2 * n + 1 : end) = td;
 end
 
 
-function F = Wrench(t, y)
-n = size(y,1) / 12;
-F = zeros(6,n);
+function F = Wrench(t, y, robot)
+F = zeros(6, robot.dof);
 if t > 1
-    % F(:,4) = [0, 0, 0, 0, 0, 10]';
+    F(:,4) = [0, 0, 0, 0, 0, 10]';
+    F(:,7) = [0, 0, 0, 0, 10, 0]';
 end
+end
+
+
+function ret = odeplot(t, y, flag, port, robot)
+if strcmp(flag, 'init') == 1
+elseif isempty(flag)
+    setJoints(port, y(1:robot.dof, end));
+else
+end
+ret = 0;
 end
 
 function ptp(port, jts, vel)
@@ -137,15 +165,12 @@ end
 end
 
 function setJoints(port, jt)
-cmd = sprintf('robot;%f;%f;%f;%f;%f;%f;%f;', jt(1), jt(2), jt(3), jt(4), jt(5)...
-    ,jt(6), jt(7));
+cmd = 'robot;' + join(string(jt),';') + ';';
 writeline(port,cmd,"127.0.0.1",7755);
 end
 
 function joints = queryJoints(port)
-% ";" 表示查询关节角
 writeline(port,"robot;","127.0.0.1",7755);
-s = readline(port);
-joints = sscanf(s,'%f;%f;%f;%f;%f;%f;%f;')';
-joints = mod(joints + pi, 2*pi) - pi;
+s = split(readline(port), ';');
+joints = double(s(1:end-1))';
 end
