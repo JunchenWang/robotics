@@ -46,13 +46,13 @@ freq = 500;
 N = tspan(2) * freq + 1;
 [~,~,~,~,pp] = trapveltraj([0, 1], N, 'EndTime', tspan(2));
 pp = pp{1};
-p = @(t) desired_task_pos(t, Ts, Te, pp, fnder(pp, 1), fnder(pp, 2));
+p = @(t) desired_task_pos_sin(t, Ts, Te, pp, fnder(pp, 1), fnder(pp, 2));
 f = @(t, y) desired_force(t, y, robot);
 A = [1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 0 0 0 1];
 Kp = 10 * eye(6);
 Ki = eye(6);
 Kd = 10 * eye(6);
-Y = 0 * eye(n);
+Y = 0 * eye(n); % 干扰观测器不适用于力位混合控制
 controller = @(t, y) DO_force_motion_controller(robot2, p, f, task_choice,null_choice, ...
                                                 Kx, Bx, Bn, Kn, kesai, Y, stiffness, refZ, A, Kp, Ki, Kd, t, y);
 control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @(t, y) Wrench(t, y, refZ, stiffness, robot), t, y);
@@ -159,6 +159,32 @@ Rd = Rs * exp_w(xe*s);
 Td = [Rd, pd; 0 0 0 1];
 vel = [Rs * xe; (pe - ps)] * sd;
 acc = [Rs * xe; (pe - ps)] * sdd;
+end
+
+function [Td, vel, acc] = desired_task_pos_sin(t, Ts, Te, pp, ppd, ppdd)
+% line with 
+s = ppval(pp, t);
+sd = ppval(ppd, t);
+sdd = ppval(ppdd, t);
+ps = Ts(1:3,4);
+pe = Te(1:3,4);
+Rs = Ts(1:3,1:3);
+Re = Te(1:3,1:3);
+len = norm(pe - ps);%y方向距离
+width = 0.05;%x方向振幅
+y = len*s;
+w = 50;%角速度
+x = width * sin(w * y);
+yd = len*sd;
+ydd = len*sdd;
+xd = width * w * cos(w * y) * yd;
+xdd = -width * w^2 * sin(w * y) * yd^2 + width * w * cos(w * y) * ydd;
+pd = ps + [x, y, 0]';
+xe = logR(Rs'*Re)';
+Rd = Rs * exp_w(xe*s);
+Td = [Rd, pd; 0 0 0 1];
+vel = [Rs * xe * sd; xd;yd;0];
+acc = [Rs * xe * sdd; xdd;ydd;0];
 end
 
 function [tao, td, fe] = DO_force_motion_controller(robot, desired_pos, desired_force, choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, stiffness, zref, A, Kp, Ki, Kd, t, y)
