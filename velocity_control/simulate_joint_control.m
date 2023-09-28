@@ -54,7 +54,8 @@ function [desired_speed, e] = pos_controller(t, y, desired_pos, Kp, Ki, Kd)
 n = length(y) / 4;
 [posd, veld] = desired_pos(t);
 e = posd - y(1:n);
-desired_speed = veld + Kp .* e + Ki .* y(3 * n +1 : 4 * n) - Kd .* y(n +1 : 2 * n);
+ed = veld - y(n +1 : 2 * n);
+desired_speed = veld + Kp .* e + Ki .* y(3 * n +1 : 4 * n) + Kd .* ed;
 end
 
 function [pos, vel] = desired_pos(t)
