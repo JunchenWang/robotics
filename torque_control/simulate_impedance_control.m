@@ -35,6 +35,8 @@ ptp(port, y0(1:n)');
 Ts = forward_kin_general(robot, y0);
 Te = Ts;
 Te(2,4) = Te(2,4) + 0.8;
+refZ = Te(3,4);
+stiffness = 1e5; % N/m
 
 freq = 500;
 N = tspan(2) * freq + 1;
@@ -44,13 +46,14 @@ p = @(t) desired_task_pos(t, Ts, Te, pp, fnder(pp, 1), fnder(pp, 2));
 
 Y = 0 * eye(n);
 controller = @(t, y) DO_impedance_controller(robot2, p, choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y);
-control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @(t, y) Wrench(t, y, robot), t, y);
+control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @(t, y) Wrench(t, y, refZ, stiffness, robot), t, y);
 [t,y] = ode15s(control_target,tspan,y0,opts);
 cnt = length(t);
 torque = zeros(cnt, n);
 pos_error = zeros(cnt, 1);
 rot_error = zeros(cnt, 1); 
 phi = zeros(cnt,1);
+force = zeros(cnt, 6);
 for i = 1 : cnt
     Xd = p(t(i));
     X = forward_kin_general(robot, y(i, 1:n)) ;
@@ -58,6 +61,9 @@ for i = 1 : cnt
     pos_error(i) = norm(Xd(1:3,4) - X(1:3,4));
     rot_error(i) = norm(logR(X(1:3,1:3)' * Xd(1:3,1:3)));
     torque(i,:) = controller(t(i), y(i,:)');
+    W = Wrench(t(i), y(i,:)', refZ, stiffness, robot);
+    X(1:3,4) = zeros(3,1);
+    force(i,:) = -adjoint_T(tform_inv(X))'* W(:,end);% applied to env
 end
 disp(pos_error(end));
 
@@ -109,6 +115,15 @@ figure;
 plot(t, phi,'-', 'LineWidth', 2);
 xlabel("$t$/s", 'interpreter','latex');
 ylabel('臂角/rad', 'interpreter','latex');
+% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
+xticks([0,1,2,3,4,5,6,7,8,9,10]);
+set(gca,'FontSize', 32);
+set(gcf,'Position',[100 100 1200 800]);
+
+figure;
+plot(t, force(:,:),'-', 'LineWidth', 2);
+xlabel("$t$/s", 'interpreter','latex');
+ylabel('接触力/N', 'interpreter','latex');
 % yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
 xticks([0,1,2,3,4,5,6,7,8,9,10]);
 set(gca,'FontSize', 32);
@@ -251,12 +266,18 @@ yd(2 * n + 1 : end) = td;
 end
 
 
-function F = Wrench(t, y, robot)
+function F = Wrench(t, y, zref, stiffness, robot)
 F = zeros(6, robot.dof);
-if t > 4
-    F(:,4) = [0, 0, 0, 0, 0, 10]';
-    % F(:,7) = [0, 0, 0, 0, 0, -10]';
+% F(:,4) = [0, 0, 0, 0, 0, 10]';
+X = forward_kin_general(robot, y(1:robot.dof));
+R = X(1:3,1:3);
+z = R(:,3);
+real_f = (X(3,4) - zref) * stiffness;
+if real_f < 0
+    X(1:3,4) = zeros(3,1); %增加约束力矩
+    F(:,end) = adjoint_T(X)' * [100 * cross(z, [0,0,-1]');0;0;-real_f]; % from s to b
 end
+
 end
 
 
