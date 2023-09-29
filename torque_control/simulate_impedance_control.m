@@ -9,12 +9,12 @@ Kx = zeros(6,6,3);
 Bx = zeros(6,6,3);
 
 choice = 2;% not change
-null_choice = 4;
+null_choice = 3;
 Kx(:,:,1) = 10 * eye(6);% pd
 Bx(:,:,1) = 10 * eye(6);
 
 Kx(:,:,2) = 1000 * eye(6);% pd+, impedance
-Bx(:,:,2) = 300 * eye(6);
+Bx(:,:,2) = 200 * eye(6);
 
 Kx(:,:,3) = 5 * eye(6);% passivity
 Bx(:,:,3) = 5 * eye(6);
@@ -33,19 +33,19 @@ Ts(1:3,1:3) = [-1, 0, 0; 0 1 0;0 0 -1];
 y0(1:n) = inverse_kin_kuka_robot_kesai_near(robot, Ts, kesai, y0(1:n));
 ptp(port, y0(1:n)');
 Ts = forward_kin_general(robot, y0);
+refZ = Ts(3,4);
+Tds = cell(1,3);
+Tds{1} = Ts;
 Te = Ts;
+Te(3,4) = Te(3,4) - 0.01;
+Tds{2} = Te;
 Te(2,4) = Te(2,4) + 0.8;
-refZ = Te(3,4);
+Tds{3} = Te;
+tnodes = [0, 2, tspan(2)];
 stiffness = 1e5; % N/m
-
-freq = 500;
-N = tspan(2) * freq + 1;
-[~,~,~,~,pp] = trapveltraj([0, 1], N, 'EndTime', tspan(2));
-pp = pp{1};
-p = @(t) desired_task_pos(t, Ts, Te, pp, fnder(pp, 1), fnder(pp, 2));
-
+motion_planner = LinearTrajectory(tnodes, Tds);
 Y = 0 * eye(n);
-controller = @(t, y) DO_impedance_controller(robot2, p, choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y);
+controller = @(t, y) DO_impedance_controller(robot2, motion_planner, choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y);
 control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @(t, y) Wrench(t, y, refZ, stiffness, robot), t, y);
 [t,y] = ode15s(control_target,tspan,y0,opts);
 cnt = length(t);
@@ -55,7 +55,7 @@ rot_error = zeros(cnt, 1);
 phi = zeros(cnt,1);
 force = zeros(cnt, 6);
 for i = 1 : cnt
-    Xd = p(t(i));
+    Xd = motion_planner.desired_pose(t(i));
     X = forward_kin_general(robot, y(i, 1:n)) ;
     phi(i) = cal_kuka_kesai(y(i, 1:n));
     pos_error(i) = norm(Xd(1:3,4) - X(1:3,4));
@@ -121,7 +121,7 @@ set(gca,'FontSize', 32);
 set(gcf,'Position',[100 100 1200 800]);
 
 figure;
-plot(t, force(:,:),'-', 'LineWidth', 2);
+plot(t, force(:,end),'-', 'LineWidth', 2);
 xlabel("$t$/s", 'interpreter','latex');
 ylabel('接触力/N', 'interpreter','latex');
 % yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
@@ -174,7 +174,7 @@ vel = [Rs * xe * sd; xd;yd;0];
 acc = [Rs * xe * sdd; xdd;ydd;0];
 end
 
-function [tao, td] = DO_impedance_controller(robot, desired_pos, choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y)
+function [tao, td] = DO_impedance_controller(robot, motion_planner, choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y)
 % Xd is desired motion in task space
 n = robot.dof;
 q = y(1:n);% + 1e-3 * rand(1, 7); % noise
@@ -187,7 +187,7 @@ Vb = Jb * qd;
 % vb = Vb(4:6);
 td = y(2 * n + 1 : end);
 
-[Xd, vel, acc] = desired_pos(t);
+[Xd, vel, acc] = motion_planner.desired_pose(t);
 Rd = Xd(1:3, 1:3);
 % pd = Xd(1:3, 4);
 wd = Rd' * vel(1:3);

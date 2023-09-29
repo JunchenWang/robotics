@@ -8,13 +8,13 @@ n = robot.dof;
 Kx = zeros(6,6,3);
 Bx = zeros(6,6,3);
 
-choice = 3;
+choice = 2;
 
 Kx(:,:,1) = 10 * eye(6);% pd
 Bx(:,:,1) = 10 * eye(6);
 
-Kx(:,:,2) = 50 * eye(6);% pd+
-Bx(:,:,2) = 50 * eye(6);
+Kx(:,:,2) = 1000 * eye(6);% pd+,K B可以大，其他的不能大，否则力矩过大
+Bx(:,:,2) = 200 * eye(6);
 
 Kx(:,:,3) = 5 * eye(6);% passivity
 Bx(:,:,3) = 5 * eye(6);
