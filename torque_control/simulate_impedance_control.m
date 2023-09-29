@@ -277,7 +277,9 @@ if real_f < 0
     X(1:3,4) = zeros(3,1); %增加约束力矩
     F(:,end) = adjoint_T(X)' * [100 * cross(z, [0,0,-1]');0;0;-real_f]; % from s to b
 end
-
+if t > 5
+    F(:,4) = [0,0,0,0,0,10]';
+end
 end
 
 
