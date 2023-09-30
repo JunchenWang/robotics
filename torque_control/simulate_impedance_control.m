@@ -8,8 +8,9 @@ n = robot.dof;
 Kx = zeros(6,6,3);
 Bx = zeros(6,6,3);
 
-choice = 2;% not change
+task_choice = 2;% not change
 null_choice = 3;
+rep_choice = 1; % xe,dxe expression 1: couple 2: uncouple
 Kx(:,:,1) = 10 * eye(6);% pd
 Bx(:,:,1) = 10 * eye(6);
 
@@ -45,13 +46,13 @@ tnodes = [0, 2, tspan(2)];
 stiffness = 1e5; % N/m
 motion_planner = LinearTrajectory(tnodes, Tds);
 Y = 0 * eye(n);
-controller = @(t, y) DO_impedance_controller(robot2, motion_planner, choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y);
+controller = @(t, y) DO_impedance_controller(robot2, motion_planner, rep_choice, task_choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y);
 control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @(t, y) Wrench(t, y, refZ, stiffness, robot), t, y);
 [t,y] = ode15s(control_target,tspan,y0,opts);
 cnt = length(t);
 torque = zeros(cnt, n);
 pos_error = zeros(cnt, 1);
-rot_error = zeros(cnt, 1); 
+rot_error = zeros(cnt, 1);
 phi = zeros(cnt,1);
 force = zeros(cnt, 6);
 for i = 1 : cnt
@@ -132,7 +133,7 @@ end
 
 
 function [Td, vel, acc] = desired_task_pos(t, Ts, Te, pp, ppd, ppdd)
-% line with 
+% line with
 s = ppval(pp, t);
 sd = ppval(ppd, t);
 sdd = ppval(ppdd, t);
@@ -149,7 +150,7 @@ acc = [Rs * xe; (pe - ps)] * sdd;
 end
 
 function [Td, vel, acc] = desired_task_pos_sin(t, Ts, Te, pp, ppd, ppdd)
-% line with 
+% line with
 s = ppval(pp, t);
 sd = ppval(ppd, t);
 sdd = ppval(ppdd, t);
@@ -174,77 +175,90 @@ vel = [Rs * xe * sd; xd;yd;0];
 acc = [Rs * xe * sdd; xdd;ydd;0];
 end
 
-function [tao, td] = DO_impedance_controller(robot, motion_planner, choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y)
+function [tao, td] = DO_impedance_controller(robot, motion_planner, rep_choice, task_choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y)
 % Xd is desired motion in task space
 n = robot.dof;
 q = y(1:n);% + 1e-3 * rand(1, 7); % noise
 qd = y(n + 1: 2 * n);% + 1e-3 * rand(1, 7); %noise
+td = y(2 * n + 1 : end);% tao_d disturbance
 [M, C, G, Jb, dJb, dM, dX, X] = m_c_g_matrix(robot,q,qd);
-% R = X(1:3,1:3);
-% p = X(1:3,4);
-Vb = Jb * qd;
-% wb = Vb(1:3);
-% vb = Vb(4:6);
-td = y(2 * n + 1 : end);
-
 [Xd, vel, acc] = motion_planner.desired_pose(t);
+R = X(1:3,1:3);
+p = X(1:3,4);
+Vb = Jb * qd;
+wb = Vb(1:3);
+v = R * Vb(4:6);
 Rd = Xd(1:3, 1:3);
-% pd = Xd(1:3, 4);
-wd = Rd' * vel(1:3);
-vd = Rd' * vel(4:6);
-alphad = Rd' * acc(1:3);
-ad = Rd' * acc(4:6);
+pd = Xd(1:3, 4);
+%% 任务空间
+if rep_choice == 1 % 耦合
+    wd = Rd' * vel(1:3);
+    vd = Rd' * vel(4:6);
+    alphad = Rd' * acc(1:3);
+    ad = Rd' * acc(4:6);
+    Vd = [wd;vd];
+    dVd = [alphad; ad - cross(wd, vd)];
+    dXd = Xd * se_twist(Vd);
+    [dXinv, Xinv] = derivative_tform_inv(X, dX);
+    Xe = Xinv * Xd;
+    dXe = dXinv * Xd + Xinv * dXd;
+    [dAdXe, AdXe] = derivative_adjoint_T(Xe, dXe);
+    xe = logT(Xe)';
+    dxe = AdXe * Vd - Vb;
+    dVd = dAdXe * Vd + AdXe * dVd;
+else % 解耦
+    Jh = [eye(3), zeros(3); zeros(3), R];
+    dJh = [zeros(3), zeros(3); zeros(3), dX(1:3,1:3)];
+    dJb = dJh * Jb + Jh * dJb;
+    Jb = Jh * Jb;
+    wd = R' * vel(1:3);
+    vd = vel(4:6);
+    alphad = R' * acc(1:3);
+    ad = acc(4:6);
+    Vd = [wd;vd];
+    dVd = [alphad - cross(wb, wd) ;ad];
+    xe = [logR(R'*Rd)'; pd - p];
+    dxe = Vd - [wb;v];
+end
+%% 零空间
+Z = null_z(Jb);
+dZ = derivative_null_z(Jb, dJb);
+if task_choice == 1 % pd
+    ax1 = dVd + Kx(:,:,1) * xe + Bx(:,:,1) * dxe;
+elseif task_choice == 2 % pd+
+    ax1 = dVd + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Bx(:,:,2)) * dxe + Kx(:,:,2) * xe); % PD+
+else % passivity
+    s = dxe + Kx(:,:,3)  * xe;
+    ax1 = dVd + Kx(:,:,3) * dxe + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Bx(:,:,3)) * s );
+end
+tao_x = M * pinv_J_x(Jb, M, ax1 - dJb * qd);
 
 q0 = inverse_kin_kuka_robot_kesai_near(robot, Xd, kesai, q)';
 if isempty(q0)
     error('no inverse');
 end
-Vd = [wd;vd];
-dVd = [alphad; ad - cross(wd, vd)];
-dXd = Xd * se_twist(Vd);
-[dXinv, Xinv] = derivative_tform_inv(X, dX);
-Xe = Xinv * Xd;
-dXe = dXinv * Xd + Xinv * dXd;
-[dAdXe, AdXe] = derivative_adjoint_T(Xe, dXe);
-
-xe = logT(Xe)';
-dxe = AdXe * Vd - Vb;
-dVd = dAdXe * Vd + AdXe * dVd;
-
-Z = null_z(Jb);
-dZ = derivative_null_z(Jb, dJb);
-
-if choice == 1 % pd
-ax1 = dVd + Kx(:,:,1) * xe + Bx(:,:,1) * dxe;
-elseif choice == 2 % pd+
-ax1 = dVd + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Bx(:,:,2)) * dxe + Kx(:,:,2) * xe); % PD+
-else % passivity
-s = dxe + Kx(:,:,3)  * xe;
-ax1 = dVd + Kx(:,:,3) * dxe + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Bx(:,:,3)) * s );
-end
-tao_x = M * pinv_J_x(Jb, M, ax1 - dJb * qd);
 qe = q0 - q;
 qed = -qd;
 if null_choice == 1
-a2 = null_proj(Jb, M, M \ (Bn * qed + Kn * qe));
-tao_n = M * a2;
+    a2 = null_proj(Jb, M, M \ (Bn * qed + Kn * qe));
+    tao_n = M * a2;
 elseif null_choice == 2
- a2 = null_proj(Jb, M, Bn * qed + Kn * qe);
- tao_n = M * a2;
+    a2 = null_proj(Jb, M, Bn * qed + Kn * qe);
+    tao_n = M * a2;
 elseif null_choice == 3
-ax2 = A_v(Z, M) \ ((Mu_v(Z, M, dZ, dM, C) + Bn(1)) * (-pinv_Z(Z, M) * qd) + Z' * Kn(1) * qe);
-a2 = Z * (ax2 - derivative_pinv_Z(Z, M, dZ, dM) * qd);
-tao_n = M * a2;
+    ax2 = A_v(Z, M) \ ((Mu_v(Z, M, dZ, dM, C) + Bn(1)) * (-pinv_Z(Z, M) * qd) + Z' * Kn(1) * qe);
+    a2 = Z * (ax2 - derivative_pinv_Z(Z, M, dZ, dM) * qd);
+    tao_n = M * a2;
 else
-tao0 = Bn * qed + Kn * qe;
-tao_n = tao0 - Jb' * ((Jb * (M \ Jb')) \ (Jb * (M \ tao0)));
+    tao0 = Bn * qed + Kn * qe;
+    tao_n = tao0 - Jb' * ((Jb * (M \ Jb')) \ (Jb * (M \ tao0)));
 end
-
-
+%% 干扰力矩估计
 P = Y * qd;
 tao_d = td + P;
 tao_d = Jb' * ((Jb * (M \ Jb'))  \ (Jb * (M \ tao_d))); % minus the component projected into the null space !
 % disp(tao_d);
+%% 求和
 tao = tao_x + tao_n + C * qd + G - tao_d;
 td = Y * (M \ (C * qd + G - tao - P - td));
 end
