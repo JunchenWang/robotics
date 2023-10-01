@@ -1,4 +1,4 @@
-function simulate_impedance_control
+function simulate_dual_loop_admittance_control
 
 port = udpport("byte");
 robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));
@@ -23,10 +23,13 @@ Bx(:,:,3) = 5 * eye(6);
 Bn = 2 * eye(n);
 Kn = 20 * eye(n);
 tspan = [0, 10];
-MassMatrix = @(t, y) [eye(n), zeros(n, 2 * n); zeros(n), mass_matrix(robot, y(1:n)), zeros(n); zeros(n, 2 * n), eye(n)];
+MassMatrix = @(t, y) [eye(n), zeros(n, 2 * n + 12); 
+                        zeros(n), mass_matrix(robot, y(1:n)), zeros(n, n + 12); 
+                        zeros(n, 2 * n), eye(n), zeros(n, 12);
+                        zeros(12, 3 * n), eye(12)];
 opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot(t, y, flag, port, robot));
 
-y0 = zeros(3*n,1);
+y0 = zeros(3*n +12,1);
 y0(1:n) = [-40 75 0 -94 0 -81 0] / 180 * pi;
 Ts = forward_kin_general(robot, y0);
 kesai = cal_kuka_kesai(y0);
@@ -45,8 +48,12 @@ Tds{3} = Te;
 tnodes = [0, 2, tspan(2)];
 stiffness = 1e5; % N/m
 motion_planner = LinearTrajectory(tnodes, Tds);
-Y = 0 * eye(n);
-controller = @(t, y) DO_impedance_controller(robot2, motion_planner, rep_choice, task_choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y);
+Y = 100 * eye(n);
+M = [1,1,1,1,1,1]';
+K = [1000,1000,1000,1000,1000,1000]';
+B = 2*sqrt(K);
+admittance = @(t, y, fext) addmittance_controller(robot2, motion_planner, M, B, K, t, y, fext);
+controller = @(t, y, fext) DO_position_controller(robot2, admittance, rep_choice, task_choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y, fext);
 control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @(t, y) Wrench(t, y, refZ, stiffness, robot), t, y);
 [t,y] = ode15s(control_target,tspan,y0,opts);
 cnt = length(t);
@@ -56,13 +63,14 @@ rot_error = zeros(cnt, 1);
 phi = zeros(cnt,1);
 force = zeros(cnt, 6);
 for i = 1 : cnt
-    Xd = motion_planner.desired_pose(t(i), y(i,:)');
+    Xd = motion_planner.desired_pose(t(i),y(i,:)');
     X = forward_kin_general(robot, y(i, 1:n)) ;
     phi(i) = cal_kuka_kesai(y(i, 1:n));
     pos_error(i) = norm(Xd(1:3,4) - X(1:3,4));
     rot_error(i) = norm(logR(X(1:3,1:3)' * Xd(1:3,1:3)));
-    torque(i,:) = controller(t(i), y(i,:)');
+    
     W = Wrench(t(i), y(i,:)', refZ, stiffness, robot);
+    torque(i,:) = controller(t(i), y(i,:)', W);
     X(1:3,4) = zeros(3,1);
     force(i,:) = -adjoint_T(tform_inv(X))'* W(:,end);% applied to env
 end
@@ -175,14 +183,40 @@ vel = [Rs * xe * sd; xd;yd;0];
 acc = [Rs * xe * sdd; xdd;ydd;0];
 end
 
-function [tao, td] = DO_impedance_controller(robot, motion_planner, rep_choice, task_choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y)
+function [Td, vel, acc, state] = addmittance_controller(robot, motion_planner, M, B, K, t, y, fext)
+    n = robot.dof;
+    Fex = -fext(:,end);
+    state = zeros(12,1);
+    re = y(3 * n + 1 : 3 * n + 3);
+    red = y(3 * n + 4 : 3 * n + 6);
+    pe = y(3 * n + 7 : 3 * n + 9);
+    ped = y(3 * n + 10 : 3 * n + 12);
+    state(1:3) = red;
+    state(4:6) = (Fex(1:3) - K(1:3) .* re - B(1:3) .* red) ./ M(1:3);
+    state(7:9) = ped;
+    state(10:12) = (Fex(4:6) - K(4:6) .* pe - B(4:6) .* ped) ./ M(4:6);
+    % T = forward_kin_general(robot, y(1:n));
+    % R = T(1:3,1:3);
+    % p = T(1:3,4);
+    [Td, vel, acc] = motion_planner.desired_pose(t, y);
+    vel = zeros(6,1);
+    acc = zeros(6,1);
+    Rd = Td(1:3,1:3) * exp_w(-re);
+    pd = Td(1:3,4) - Rd * pe;
+    % vel(1:3) = vel(1:3) - Td(1:3,1:3) * w_dr_A(re) * red;
+    % vel(4:6) = vel(4:6) - Rd * (ped + so_w(Rd' * vel(1:3)) * pe);
+    % acc = zeros(6,1);
+    Td = [Rd, pd; 0 0 0 1];
+end
+
+function [tao, td] = DO_position_controller(robot, addmittance_controller, rep_choice, task_choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y, fext)
 % Xd is desired motion in task space
 n = robot.dof;
 q = y(1:n);% + 1e-3 * rand(1, 7); % noise
 qd = y(n + 1: 2 * n);% + 1e-3 * rand(1, 7); %noise
-td = y(2 * n + 1 : end);% tao_d disturbance
+td = y(2 * n + 1 : 3 * n);% tao_d disturbance
 [M, C, G, Jb, dJb, dM, dX, X] = m_c_g_matrix(robot,q,qd);
-[Xd, vel, acc] = motion_planner.desired_pose(t, y);
+[Xd, vel, acc, state] = addmittance_controller(t, y, fext);
 R = X(1:3,1:3);
 p = X(1:3,4);
 Vb = Jb * qd;
@@ -260,7 +294,7 @@ tao_d = Jb' * ((Jb * (M \ Jb'))  \ (Jb * (M \ tao_d))); % minus the component pr
 % disp(tao_d);
 %% 求和
 tao = tao_x + tao_n + C * qd + G - tao_d;
-td = Y * (M \ (C * qd + G - tao - P - td));
+td = [Y * (M \ (C * qd + G - tao - P - td)); state];
 end
 
 
@@ -268,13 +302,14 @@ function yd = manipulator_dynamics_observer(robot, controller, fext, t, y)
 % fext is a force function applied to the robot
 % fext(t,y)(:,end) is applied to TCP and others are applied to link frames
 n = robot.dof;
-yd = zeros(3*n,1);
+yd = zeros(3*n + 12,1);
 q = y(1:n);
 qd = y(n + 1 : 2 * n);
 hqqd = gravity_velocity_torque(robot, q, qd);
 yd(1:n) = qd;
-ext_torque = get_ext_torque(robot, q, fext(t, y));
-[tau, td] = controller(t, y);
+Fext = fext(t, y);
+ext_torque = get_ext_torque(robot, q, Fext);
+[tau, td] = controller(t, y, Fext);
 yd(n + 1 : 2 * n) = tau - hqqd + ext_torque;
 yd(2 * n + 1 : end) = td;
 end
@@ -292,7 +327,7 @@ if real_f < 0
     F(:,end) = adjoint_T(X)' * [100 * cross(z, [0,0,-1]');0;0;-real_f]; % from s to b
 end
 if t > 5
-    F(:,4) = [0,0,0,0,0,10]';
+    % F(:,4) = [0,0,0,0,0,10]';
 end
 end
 
