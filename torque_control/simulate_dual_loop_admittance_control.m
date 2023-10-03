@@ -10,7 +10,7 @@ Bx = zeros(6,6,3);
 
 task_choice = 2;% not change
 null_choice = 3;
-rep_choice = 1; % xe,dxe expression 1: couple 2: uncouple
+rep_choice = 2; % xe,dxe expression 1: couple 2: uncouple
 Kx(:,:,1) = 10 * eye(6);% pd
 Bx(:,:,1) = 10 * eye(6);
 
@@ -86,6 +86,8 @@ set(gca,'FontSize', 32);
 lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
 fontsize(lg,18,'points')
 set(gcf,'Position',[100 100 1200 800]);
+savefig('干扰力矩.fig');
+saveas(gcf, '干扰力矩.png');
 
 figure;
 plot(t, torque,'-', 'LineWidth', 2);
@@ -97,6 +99,8 @@ set(gca,'FontSize', 32);
 lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
 fontsize(lg,18,'points')
 set(gcf,'Position',[100 100 1200 800]);
+savefig('控制力矩.fig');
+saveas(gcf, '控制力矩.png');
 
 figure;
 plot(t, rot_error,'-', 'LineWidth', 2);
@@ -108,6 +112,8 @@ set(gca,'FontSize', 32);
 % lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
 % fontsize(lg,18,'points')
 set(gcf,'Position',[100 100 1200 800]);
+savefig('姿态误差.fig');
+saveas(gcf, '姿态误差.png');
 
 figure;
 plot(t, pos_error,'-', 'LineWidth', 2);
@@ -119,6 +125,8 @@ set(gca,'FontSize', 32);
 % lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
 % fontsize(lg,18,'points')
 set(gcf,'Position',[100 100 1200 800]);
+savefig('位置误差.fig');
+saveas(gcf, '位置误差.png');
 
 figure;
 plot(t, phi,'-', 'LineWidth', 2);
@@ -128,6 +136,8 @@ ylabel('臂角/rad', 'interpreter','latex');
 xticks([0,1,2,3,4,5,6,7,8,9,10]);
 set(gca,'FontSize', 32);
 set(gcf,'Position',[100 100 1200 800]);
+savefig('臂角.fig');
+saveas(gcf, '臂角.png');
 
 figure;
 plot(t, force(:,end),'-', 'LineWidth', 2);
@@ -137,6 +147,9 @@ ylabel('接触力/N', 'interpreter','latex');
 xticks([0,1,2,3,4,5,6,7,8,9,10]);
 set(gca,'FontSize', 32);
 set(gcf,'Position',[100 100 1200 800]);
+savefig('接触力.fig');
+saveas(gcf, '接触力.png');
+
 end
 
 
@@ -187,26 +200,39 @@ function [Td, vel, acc, state] = addmittance_controller(robot, motion_planner, M
     n = robot.dof;
     Fex = -fext(:,end);
     state = zeros(12,1);
+
+    [Td, vel, acc] = motion_planner.desired_pose(t, y);
+    Rd = Td(1:3,1:3);
+    pd = Td(1:3,4);
+    wd = vel(1:3);
+    vd = vel(4:6);
+    alphad = acc(1:3);
+    ad = acc(4:6);
     re = y(3 * n + 1 : 3 * n + 3);
     red = y(3 * n + 4 : 3 * n + 6);
     pe = y(3 * n + 7 : 3 * n + 9);
     ped = y(3 * n + 10 : 3 * n + 12);
+    redd = (Fex(1:3) - K(1:3) .* re - B(1:3) .* red) ./ M(1:3);
+    pedd = (Fex(4:6) - K(4:6) .* pe - B(4:6) .* ped) ./ M(4:6);
     state(1:3) = red;
-    state(4:6) = (Fex(1:3) - K(1:3) .* re - B(1:3) .* red) ./ M(1:3);
+    state(4:6) = redd;
     state(7:9) = ped;
-    state(10:12) = (Fex(4:6) - K(4:6) .* pe - B(4:6) .* ped) ./ M(4:6);
-    % T = forward_kin_general(robot, y(1:n));
-    % R = T(1:3,1:3);
-    % p = T(1:3,4);
-    [Td, vel, acc] = motion_planner.desired_pose(t, y);
-    vel = zeros(6,1);
-    acc = zeros(6,1);
-    Rd = Td(1:3,1:3) * exp_w(-re);
-    pd = Td(1:3,4) - Rd * pe;
-    % vel(1:3) = vel(1:3) - Td(1:3,1:3) * w_dr_A(re) * red;
-    % vel(4:6) = vel(4:6) - Rd * (ped + so_w(Rd' * vel(1:3)) * pe);
+    state(10:12) = pedd;
+    
+    R = Rd * exp_w(-re);
+    p = pd - R * pe;
+    A = w_dr_A(re);
+    dA = derivative_Ar(re, red);
+    w = wd - Rd * A * red;
+    alpha = alphad - Rd * A * (redd + (A \ dA) * (A \ Rd') * (wd - w)) + cross(wd, w);
+    v = vd - R * ped - cross(w, pd - p);
+    a = ad - R * pedd - cross(alpha, pd - p) - 2 * cross(w, vd - v) + cross(w, cross(w, pd - p));
+    vel = [w;v];
+    acc = [alpha; a];
+
+    % vel = zeros(6,1);
     % acc = zeros(6,1);
-    Td = [Rd, pd; 0 0 0 1];
+    Td = [R, p; 0 0 0 1];
 end
 
 function [tao, td] = DO_position_controller(robot, addmittance_controller, rep_choice, task_choice, null_choice, Kx, Bx, Bn, Kn, kesai, Y, t, y, fext)

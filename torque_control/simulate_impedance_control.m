@@ -10,7 +10,7 @@ Bx = zeros(6,6,3);
 
 task_choice = 2;% not change
 null_choice = 3;
-rep_choice = 1; % xe,dxe expression 1: couple 2: uncouple
+rep_choice = 2; % xe,dxe expression 1: couple 2: uncouple
 Kx(:,:,1) = 10 * eye(6);% pd
 Bx(:,:,1) = 10 * eye(6);
 
@@ -292,7 +292,7 @@ if real_f < 0
     F(:,end) = adjoint_T(X)' * [100 * cross(z, [0,0,-1]');0;0;-real_f]; % from s to b
 end
 if t > 5
-    F(:,4) = [0,0,0,0,0,10]';
+    % F(:,4) = [0,0,0,0,0,10]';
 end
 end
 
