@@ -14,8 +14,8 @@ null_choice = 1;
 Kx(:,:,1) = 10 * eye(6);% pd
 Bx(:,:,1) = 10 * eye(6);
 
-Kx(:,:,2) = 500 * eye(6);% pd+
-Bx(:,:,2) = 50 * eye(6);
+Kx(:,:,2) = 1000 * eye(6);% pd+
+Bx(:,:,2) = 200 * eye(6);
 
 Kx(:,:,3) = 5 * eye(6);% passivity
 Bx(:,:,3) = 5 * eye(6);
