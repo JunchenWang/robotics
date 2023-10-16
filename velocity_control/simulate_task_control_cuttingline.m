@@ -24,16 +24,8 @@ y0(1:n) = [0 75 0 -94 0 -81 0] / 180 * pi;
 ptp(port, y0(1:n)');
 % kesai = cal_kuka_kesai(y0);
 Ts = forward_kin_general(robot, y0);
-Te = Ts;
-prcm = Ts * [0;0;0.15;1];
-
-Te(1:3,4) = Te(1:3,4) + [-0.1; 0.4; 0.5];
-Te(1:3,1:3) = Te(1:3,1:3) *  RPY2R([0.4, 0.3, 0.2]);
-freq = 500;
-N = tspan(2) * freq + 1;
-[~,~,~,~,pp] = trapveltraj([0, 1], N, 'EndTime', tspan(2));
-pp = pp{1};
-p = @(t) desired_task_pos_cos(t, Ts, Te, pp, fnder(pp, 1), fnder(pp, 2));
+%% load path
+p = @(t) desired_task_pos_cuttingline(t, path);
 v = @(t, y) task_pos_controller(t, y, p, robot, Kp_p, Ki_p, Kd_p);
 u = @(t, y) speed_controller(t, y, v, Kp_s, Ki_s);
 dynamic = @(t, y) joint_motor_dynamic(t, y, u, d, J, B, r);
@@ -135,56 +127,13 @@ end
 
 
 function [Td, Vd] = desired_task_pos_cuttingline(t, path)
-
+% dt = 0.002;
+% cnt = round(t / dt) + 1;
+% Td = path()
 Vd = zeros(6,1);
 end
 
 
-function [Td, Vd] = desired_task_pos_cos(t, Ts, Te, pp, ppd, ppdd)
-
-ps = Ts(1:3,4);
-Rs = Ts(1:3,1:3);
-pd = ps + Rs * [0.1*sin(3*t);0.04*t;0];
-
-Td = [Rs, pd; 0 0 0 1];
-Vd = [zeros(3,1); Rs * [0.1*3*cos(3*t);0.04;0]];
-% Vd = zeros(6,1);
-end
-
-function [Td, Vd] = desired_task_pos_circle(t, Ts, Te, pp, ppd, ppdd)
-
-ps = Ts(1:3,4);
-Rs = Ts(1:3,1:3);
-pd = ps + Rs * [0.1*sin(2*t);0.1*cos(2*t) - 0.1;-0.01*t];
-
-Td = [Rs, pd; 0 0 0 1];
-Vd = [zeros(3,1); Rs * [0.2*cos(2*t);-0.2*sin(2*t);-0.01]];
-% Vd = zeros(6,1);
-end
-
-function [Td, Vd] = desired_task_pos_rcm(t, Ts, Te, pp, ppd, ppdd)
-s = ppval(pp, t);
-a = pi / 6 * s;
-b = pi / 6 * s;
-c = pi / 6 * s;
-d = s * 0.05;
-Td = Ts * generateRCM(d, a, b, c, [0,0,0.15]');
-Vd = zeros(6,1);
-end
-
-
-function T = generateRCM(d,a,b,c,p_rcm)
-% d in m, a b c in rad, p_rcm in m
-x_rcm = [1, 0, 0]';
-z_rcm = [0, 0, 1]';
-y_rcm = cross(z_rcm, x_rcm);
-St = sm2twist([p_rcm', z_rcm', inf, 1]) * d;
-% p_rcm = p_rcm - d * z_rcm;
-Sz = sm2twist([p_rcm', z_rcm', 0, 1]) * a;
-Sx = sm2twist([p_rcm', x_rcm', 0, 1]) * b;
-Sy = sm2twist([p_rcm', y_rcm', 0, 1]) * c;
-T = exp_twist(Sx)*exp_twist(Sy)*exp_twist(Sz)*exp_twist(St);
-end
 
 
 function ret = odeplot(t, y, flag, port, robot)
