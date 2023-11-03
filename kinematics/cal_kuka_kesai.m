@@ -1,11 +1,14 @@
 function kesai = cal_kuka_kesai(angles)
-d1 = 340;
-d3 = 400;
-d5 = 400;
-d7 = 126;
-if angles(4) >= 0
+d1 = .34;
+d3 = .4;
+d5 = .4;
+d7 = .126;
+if abs(angles(4)) < 1e-6 % 关节4为0，奇异位置
+    kesai = 0;
+    return;
+elseif angles(4) > 0
     cfg4 = 1;
-else 
+else
     cfg4 = -1;
 end
 eps1 = 1e-12;%not change
@@ -37,10 +40,10 @@ SE_ = E_-S;
 SE_ = SE_ / norm(SE_);
 SE = E-S;
 SE = SE / norm(SE);
-if abs(abs(dot(SE, SE_)) - 1) < eps1
-    kesai = 0;
-    return;
-end
+% if abs(abs(dot(SE, SE_)) - 1) < eps1
+%     kesai = 0;
+%     return;
+% end
 x = cross(SW, SE_);
 x = x / norm(x);
 y = cross(SW, SE);

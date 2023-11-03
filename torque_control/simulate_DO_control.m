@@ -3,7 +3,7 @@ function simulate_DO_control
 port = udpport("byte");
 robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));
 robot2 = robot;
-robot2.mass = 1.2*robot.mass;% error
+% robot2.mass = 1.2*robot.mass;% error
 n = robot.dof;
 Kx = zeros(6,6,3);
 Bx = zeros(6,6,3);
@@ -20,13 +20,14 @@ Kx(:,:,3) = 5 * eye(6);% passivity
 Bx(:,:,3) = 5 * eye(6);
 
 Bn = 2 * eye(n);
-Kn = 20 * eye(n);
+Kn = 10 * eye(n);
 tspan = [0, 10];
 MassMatrix = @(t, y) [eye(n), zeros(n, 2 * n); zeros(n), mass_matrix(robot, y(1:n)), zeros(n); zeros(n, 2 * n), eye(n)];
 opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot(t, y, flag, port, robot));
 
 y0 = zeros(3*n,1);
 y0(1:n) = [0 75 0 -94 0 -81 0] / 180 * pi;
+% y0(1:n) = [  -0.4689    0.4696         0   -1.0671    0.0670    1.2112   -0.3207];
 ptp(port, y0(1:n)');
 kesai = cal_kuka_kesai(y0);
 Ts = forward_kin_general(robot, y0);
@@ -155,10 +156,11 @@ vd = vel(4:6);
 alphad = R' * acc(1:3);
 ad = acc(4:6);
 
-q0 = inverse_kin_kuka_robot_kesai_near(robot, Xd, kesai, q)';
-if isempty(q0)
-    error('no inverse');
-end
+q0 = inverse_kin_kuka_robot_kesai_near(robot, Xd, kesai, q);
+% q0 = inverse_kin_kuka_kesai_near(Xd, kesai, q);
+% if isempty(q0)
+%     error('no inverse');
+% end
 Vd = [wd;vd];
 dVd = [alphad - cross(wb, wd) ;ad];
 xe = [logR(R'*Rd)'; pd - p];
@@ -181,6 +183,10 @@ a1 = pinv_J_x(Jb, M, ax1 - dJb * qd);
 qe = q0 - q;
 qed = -qd;
 a2 = null_proj(Jb, M, M \ (Bn * qed + Kn * qe));
+
+% N = eye(n) - pinv(Jb) * Jb;
+% a2 =  N * (M \ (Bn * qed + Kn * qe));
+
 % ax2 = A_v(Z, M) \ ((Mu_v(Z, M, dZ, dM, C) + Bn(1)) * (-pinv_Z(Z, M) * qd) + Z' * Kn(1) * qe);
 % a2 = Z * (ax2 - derivative_pinv_Z(Z, M, dZ, dM) * qd);
 
@@ -214,9 +220,9 @@ end
 
 function F = Wrench(t, y, robot)
 F = zeros(6, robot.dof);
-if t > 1
-    F(:,4) = [0, 0, 0, 0, 0, 10]';
-    F(:,7) = [0, 0, 0, 10, 0, 0]';
+if t > 2 && t < 8
+    F(:,4) = [0, 0, 0, 0, 0, 20]';
+    % F(:,7) = [0, 0, 0, 0, 0, 0]';
 end
 end
 

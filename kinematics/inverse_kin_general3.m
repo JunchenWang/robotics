@@ -1,5 +1,5 @@
-function [angles, flag] = inverse_kin_general_lsqnonlin(robot, Td, ref, tol)
-% tol = [1e-5, 1e-5]
+function [angles, flag] = inverse_kin_general3(robot, Td, ref, tol)
+
 fun = @(x) objFun(x, Td, robot);
 options = optimoptions('lsqnonlin','SpecifyObjectiveGradient',true,'Algorithm', 'levenberg-marquardt',...
     'FunctionTolerance',1e-10, 'Display','off', 'MaxIterations', 100);

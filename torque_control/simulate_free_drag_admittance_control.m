@@ -247,10 +247,10 @@ else % passivity
 end
 tao_x = M * pinv_J_x(Jb, M, ax1 - dJb * qd);
 
-q0 = inverse_kin_kuka_robot_kesai_near(robot, Xd, kesai, q)';
-if isempty(q0)
-    error('no inverse');
-end
+q0 = inverse_kin_kuka_robot_kesai_near(robot, Xd, kesai, q);
+% if isempty(q0)
+%     error('no inverse');
+% end
 qe = q0 - q;
 qed = -qd;
 if null_choice == 1

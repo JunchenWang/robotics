@@ -1,7 +1,5 @@
 function [angles, flag] = inverse_kin_general(robot, Td, ref, tol)
-% test: q = [0.1328   -1.6864   -0.0698    0.7795    1.1255   -0.6565];
-% test: q =  [-0.0635   -2.0865    3.0076    1.3364    0.0030   -0.1817];
-angles = ref;
+angles = ref(:);
 rd = logR(Td(1:3,1:3))';
 norm_rd = norm(rd);
 if norm_rd ~= 0
@@ -19,13 +17,14 @@ if norm(rd-r) < norm(rd2 - r)
 else
     b = [rd2;td] - [r;t];
 end
-while (norm(b(1:3))  > tol(1) || norm(b(4:6)) > tol(2)) && cnt < 10
-%     Ja = analytic_jacobian_matrix(Jb, T);
-%     delta = lsqminnorm(Jb, [w_dr_A(r), zeros(3); zeros(3),T(1:3,1:3)'] * b);
-%     delta = Jb \ ([w_dr_A(r), zeros(3); zeros(3),T(1:3,1:3)'] * b);
-      delta = pinv(Jb) * ([w_dr_A(r), zeros(3); zeros(3),T(1:3,1:3)'] * b);
-%     delta = mod(delta + pi, 2*pi) - pi;
-    angles = angles + delta';
+notYet = norm(b(1:3))  > tol(1) || norm(b(4:6)) > tol(2);
+while notYet && cnt < 10
+    %     Ja = analytic_jacobian_matrix(Jb, T);
+    %     delta = lsqminnorm(Jb, [w_dr_A(r), zeros(3); zeros(3),T(1:3,1:3)'] * b);
+    %     delta = Jb \ ([w_dr_A(r), zeros(3); zeros(3),T(1:3,1:3)'] * b);
+    delta = pinv(Jb) * ([w_dr_A(r), zeros(3); zeros(3),T(1:3,1:3)'] * b);
+    %     delta = mod(delta + pi, 2*pi) - pi;
+    angles = angles + delta;
     cnt = cnt + 1;
     [Jb, T] = jacobian_matrix(robot, angles);
     r = logR(T(1:3,1:3))';
@@ -35,10 +34,13 @@ while (norm(b(1:3))  > tol(1) || norm(b(4:6)) > tol(2)) && cnt < 10
     else
         b = [rd2;td] - [r;t];
     end
+    notYet = norm(b(1:3))  > tol(1) || norm(b(4:6)) > tol(2);
 end
 angles = mod(angles + pi, 2*pi) - pi;
-if cnt < 10
+if ~notYet
     flag = 1;
 else
+    % disp('nolinear');
     [angles, flag] = inverse_kin_general_lsqnonlin(robot, Td, ref, tol);
+end
 end

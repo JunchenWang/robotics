@@ -1,9 +1,9 @@
 function T = forward_kin_kuka(angles)
 % angles: A1-An
-d1 = 340;
-d3 = 400;
-d5 = 400;
-d7 = 126;
+d1 = .34;
+d3 = .4;
+d5 = .4;
+d7 = .126;
 dh_table = [0 0 d1 0; 
             -pi/2 0 0 0;
             pi/2 0 d3 0;

@@ -18,8 +18,8 @@ J = [8;5;4;3;2;2;2];
 B = 2;
 r = 200;
 tspan = [0, 10];
-
-y0(1:n) = [0 75 0 -94 0 -81 0] / 180 * pi;
+% start = queryJoints(port);
+y0(1:n) = [  -0.4689    0.4696         0   -1.0671    0.0670    1.2112   -0.3207];
 % y0(1:n) = [0 40 0 -80  -10 45 0] / 180 * pi;
 ptp(port, y0(1:n)');
 kesai = cal_kuka_kesai(y0);
@@ -28,9 +28,9 @@ Rs = Ts(1:3,1:3);
 ps = Ts(1:3,4);
 % RCM param
 p1 = 0;
-p2 = 0.3;
+p2 = 0.5;
 
-lambda0 = 0.5;
+lambda0 = 0.8;
 
 P1 = ps + Rs * [0, 0, p1]';
 P2 = ps + Rs * [0, 0, p2]';
@@ -149,9 +149,9 @@ end
 
 function [xyz, prcm]= desired_rcm_pos(t, Ts, p1, p2, lambda0)
 %相对于初始位置 
-xyz = [0;0.02*t; p2];
+% xyz = [0;0.02*t; p2];
 % xyz = [0.02*sin(2*t);0.02*t; p2];
-% xyz = [0.03*cos(t) - 0.03; 0.03 * sin(t); p2];
+xyz = [0.01*cos(t) - 0.01; 0.01 * sin(t); p2];
 % xyz = [0.02*cos(t); 0.02 * sin(t); p2 + 0.005*t];
 % xyzd = [-0.02*sin(t); 0.02 * cos(t); 0];
 % xyzd = zeros(3,1);

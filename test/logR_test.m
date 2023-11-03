@@ -1,9 +1,10 @@
 function logR_test
 r = rand(3,1);
-% r = r / norm(r) * pi; 
+r = r / norm(r) * pi; 
 R = exp_w(r);
-d = 1e-6; % noise
+d = 1e-9; % noise
 R = R + d;
+R = eye(3) + d;
 % 真值
 disp('真值');
 disp(r'); 

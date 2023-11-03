@@ -1,6 +1,8 @@
 function w = logR(R)
 % rotation R -> axis angle rep
 % 时间和精度测试初步表明logR表现在pi位置没有AngleAxisFromRotation好 2023.8.24
+% w = AngleAxisFromRotation(R)';
+% return;
 eps = 1e-7; % do not change
 n = size(R, 3);
 w = zeros(n, 3);

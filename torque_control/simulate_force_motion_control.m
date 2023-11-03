@@ -228,9 +228,9 @@ alphad = R' * acc(1:3);
 ad = acc(4:6);
 
 q0 = inverse_kin_kuka_robot_kesai_near(robot, Xd, kesai, q)';
-if isempty(q0)
-    error('no inverse');
-end
+% if isempty(q0)
+%     error('no inverse');
+% end
 Vd = [wd;vd];
 dVd = [alphad - cross(wb, wd) ;ad];
 xe = [logR(R'*Rd)'; pd - p];
