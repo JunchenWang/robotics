@@ -41,6 +41,6 @@ if ~notYet
     flag = 1;
 else
     % disp('nolinear');
-    [angles, flag] = inverse_kin_general_lsqnonlin(robot, Td, ref, tol);
+    [angles, flag] = inverse_kin_general_lsqnonlin(robot, Td, ref(:), tol);
 end
 end
