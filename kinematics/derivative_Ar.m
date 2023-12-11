@@ -1,8 +1,10 @@
 function dA = derivative_Ar(r, dr)
+% r = 0处的导数如何定义：
+% dr = rand(3,1); r = 1e-8 * (dr + [1,0,0]'); derivative_Ar(r, dr)+ SkewMatrix(dr)
 nr = norm(r);
-if nr < eps
-    r = eps * ones(3,1); % 1e-6 not change, 为了应对r接近于零的奇异位置
-    nr = norm(r);
+if nr == 0
+    dA = -so_w(dr);
+    return;
 end
 dnr = dot(dr,r) / nr;
 skr = so_w(r);
