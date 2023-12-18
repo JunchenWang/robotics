@@ -1,4 +1,4 @@
-function G = GMatrix(robot, q)
+function G = g_matrix(robot, q)
 m = robot.m;
 L = robot.L;
 g = robot.g;

@@ -1,6 +1,6 @@
 function ptp_move(port, jts, vel)
 if nargin < 3
-    vel = .4;
+    vel = 2;
 end
 start = query_joints(port);
 wayPoints = [start(:),jts(:)];

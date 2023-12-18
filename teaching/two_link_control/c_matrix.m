@@ -1,4 +1,4 @@
-function C = CMatrix(robot, q, qd)
+function C = c_matrix(robot, q, qd)
 m = robot.m;
 L = robot.L;
 C = 0.5*m*L^2 * [-sin(q(2))*qd(2), -sin(q(2))*(qd(1)+qd(2)); sin(q(2))*qd(1), 0];
