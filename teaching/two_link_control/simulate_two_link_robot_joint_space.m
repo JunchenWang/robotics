@@ -15,7 +15,7 @@ dynamic = @(t, y) two_link_dynamics(robot, t, y, tau);
 len = length(t);
 q_d = zeros(len, 2);
 for i = 1 : len
-    q_d(i,:) = desired_pos(t);
+    q_d(i,:) = desired_pos(t(i));
 end
 plot(t, y(:,1), 'b-*', t, y(:,2), 'b-s', t, q_d, 'r-', 'LineWidth',2);
 title('双连杆机器人关节空间控制');
