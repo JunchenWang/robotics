@@ -22,12 +22,12 @@ set(gca,'FontSize', 16);
 lg = legend('仿真位置','期望位置');
 fontsize(lg,14,'points')
 end
-function [qd_d, qe] = pos_controller(t, y, q_d, Kp, Ki, Kd)
+function [qd, qe] = pos_controller(t, y, q_d, Kp, Ki, Kd)
     [q_d, qd_d] = q_d(t);
     qe = q_d - y(1);
     qed = qd_d - y(2);
     sum_qe = y(4);
-    qd_d = qd_d + Kp * qe + Ki * sum_qe + Kd * qed; 
+    qd = qd_d + Kp * qe + Ki * sum_qe + Kd * qed; 
 end
 function [u, qed, qe] = speed_controller(t, y, qd_d, Kp, Ki)
     qd = y(2);
