@@ -2,38 +2,40 @@ function simulate_RCM_control_elmo
 % 双环控制7轴机器人轨迹，状态空间4个变量：位置，速度，速度误差积分，位置误差积分
 port = udpport("byte");
 opts = odeset('OutputFcn', @(t, y, flag) odeplot(t, y, flag, port));
-robot = convert_robot_tree2(importrobot('urdf\elmourdf13\elmourdf13\urdf\elmourdf13.urdf'));
+% robot = convert_robot_tree2(importrobot('urdf\elmourdf13\elmourdf13\urdf\elmourdf13.urdf'));
+robot = convert_robot_tree2(importrobot('urdf\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf'));
 n = robot.dof;
 y0 = zeros(3 * n + 7, 1);
 
 Kp_s = [100,100,100,100,100,100]';
 Ki_s = [50,50,50,50,100,100]';
 
-Kp_p = 20 * [1, 1, 1, 1, 1, 1]';
+Kp_p = 1 * [1, 1, 1, 1, 1, 1]';
 Ki_p = 0 * [1,1,1,1,1,1]';
 Kd_p = 0 * [1,1,1,1,1,1]';
 
-d = @(t, y) [7;6;5;4;3;2]*10;
+d = @(t, y) [7;6;5;4;3;2];
 J = [8;5;4;3;2;2];
 B = 2;
 r = 200;
-tspan = [0, 10];
+tspan = [0, 20];
 % start = queryJoints(port);
-y0(1:n) = [   -0.3003    0.5740    1.8471   -2.3236    1.5270   pi/2];
+y0(1:n) = [0   -2.2496   -1.8260   -0.5785    1.6181   0];
 % y0(1:n) = [0 40 0 -80  -10 45 0] / 180 * pi;
 ptp(port, y0(1:n)');
-kesai = cal_kuka_kesai(y0);
+kesai = 0;%cal_kuka_kesai(y0);
 Ts = forward_kin_general(robot, y0);
 Rs = Ts(1:3,1:3);
 ps = Ts(1:3,4);
 % RCM param
-p1 = 0;
-p2 = 0.3;
+p2 = [0.0014; -0.2621; 0.06175];
+% p1 = 0;
+p1 = [0.0014; 0; 0.06175];
 
 lambda0 = 0.5;
 
-P1 = ps + Rs * [0, 0, p1]';
-P2 = ps + Rs * [0, 0, p2]';
+P1 = ps + Rs * p1;
+P2 = ps + Rs * p2;
 Prcm = P1 + (P2 - P1) * lambda0;
 
 y0(end) = lambda0;
@@ -55,12 +57,12 @@ lambdas = zeros(length(t),1);
 for i = 1 : length(t)
     [xyz, prcm] = p(t(i));
     pos_d(:,i) = ps + Rs * xyz;
-    T = forward_kin_general(robot, y(i,1:7));
+    T = forward_kin_general(robot, y(i,1:n));
     lambdas(i) = y(i,end);
     R = T(1:3,1:3);
     pp = T(1:3,4);
-    P1(:,i) = pp + R * [0, 0, p1]';
-    P2(:,i) = pp + R * [0, 0, p2]';
+    P1(:,i) = pp + R * p1;
+    P2(:,i) = pp + R * p2;
     pos_actual(:,i) = P2(:,i);
     dist(i) = dist2line(prcm, P1(:,i), P2(:,i));
     rcm_error(1,i) = norm(y(i, 3*n + 4:3*n + 6));
@@ -110,8 +112,8 @@ end
 function [desired_speed, e] = task_rcm_controller(t, y, desired_rcm_pos, robot, Ts, p1, p2, kesai, Kp, Ki, Kd)
 Rs = Ts(1:3,1:3);
 ps = Ts(1:3,4);
-Tp1 = [eye(3), -[0, 0, p1]'; 0 0 0 1];
-Tp2 = [eye(3), -[0, 0, p2]'; 0 0 0 1];
+Tp1 = [eye(3), -p1; 0 0 0 1];
+Tp2 = [eye(3), -p2; 0 0 0 1];
 
 n = 6;
 q = y(1:n);
@@ -126,8 +128,8 @@ J1 = adjoint_T(Tp1) * Jb;
 J2 = adjoint_T(Tp2) * Jb;
 J1 = R * J1(4:6,:);
 J2 = R * J2(4:6,:);
-P1 = p + R * [0, 0, p1]';
-P2 = p + R * [0, 0, p2]';
+P1 = p + R * p1;
+P2 = p + R * p2;
 tipxyz = Rs' * (P2 - ps);
 rcm = P1 + (P2 - P1) * lambda;
 Jrcm = [J1 + lambda * (J2 - J1), P2 - P1];
@@ -149,14 +151,26 @@ function [xyz, prcm]= desired_rcm_pos(t, Ts, p1, p2, lambda0)
 %相对于初始位置 
 % xyz = [0;0.02*t; p2];
 % xyz = [0.02*sin(2*t);0.02*t; p2];
-xyz = [0.01*cos(t) - 0.01; 0.01 * sin(t); p2];
+% xyz = p2 + [0.5;0.2;0];
+% if t < 25
+% ang = 70;
+% else
+% ang = -70;
+% end
+ang= -70;
+r = sin(ang/180*pi) * 0.13;
+delta = cos(ang/180*pi) * 0.13;
+a = pi/4;
+% xyz = p2 + [0; 0.13 - delta; r];
+xyz = p2 + [r*sin(a); 0.13 - delta; r*cos(a)];
+% xyz = p2 + [r; 0.13 - delta; 0];
 % xyz = [0.02*cos(t); 0.02 * sin(t); p2 + 0.005*t];
 % xyzd = [-0.02*sin(t); 0.02 * cos(t); 0];
 % xyzd = zeros(3,1);
 Rs = Ts(1:3,1:3);
 ps = Ts(1:3,4);
-P1 = ps + Rs * [0, 0, p1]';
-P2 = ps + Rs * [0, 0, p2]';
+P1 = ps + Rs * p1;
+P2 = ps + Rs * p2;
 prcm = P1 + (P2 - P1) * lambda0;% + [0,0,0.01]'; % change rcm
 end
 
