@@ -10,7 +10,7 @@ y0 = zeros(3 * n + 7, 1);
 Kp_s = [100,100,100,100,100,100]';
 Ki_s = [50,50,50,50,100,100]';
 
-Kp_p = 1 * [1, 1, 1, 1, 1, 1]';
+Kp_p = 10 * [1, 1, 1, 1, 1, 1]';
 Ki_p = 0 * [1,1,1,1,1,1]';
 Kd_p = 0 * [1,1,1,1,1,1]';
 
@@ -32,7 +32,7 @@ p2 = [0.0014; -0.2621; 0.06175];
 % p1 = 0;
 p1 = [0.0014; 0; 0.06175];
 
-lambda0 = 0.5;
+lambda0 = 0.8;
 
 P1 = ps + Rs * p1;
 P2 = ps + Rs * p2;
@@ -157,12 +157,13 @@ function [xyz, prcm]= desired_rcm_pos(t, Ts, p1, p2, lambda0)
 % else
 % ang = -70;
 % end
-ang= -70;
-r = sin(ang/180*pi) * 0.13;
-delta = cos(ang/180*pi) * 0.13;
-a = pi/4;
+ang= 60;
+l = (1-lambda0) * 0.2621;
+r = sin(ang/180*pi) * l;
+delta = cos(ang/180*pi) * l;
+a =  pi* (t/10 -1) ;
 % xyz = p2 + [0; 0.13 - delta; r];
-xyz = p2 + [r*sin(a); 0.13 - delta; r*cos(a)];
+xyz = p2 + [r*sin(a); l - delta; r*cos(a)];
 % xyz = p2 + [r; 0.13 - delta; 0];
 % xyz = [0.02*cos(t); 0.02 * sin(t); p2 + 0.005*t];
 % xyzd = [-0.02*sin(t); 0.02 * cos(t); 0];
