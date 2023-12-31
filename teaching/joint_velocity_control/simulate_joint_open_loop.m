@@ -2,7 +2,7 @@ function simulate_joint_open_loop
 joint = joint_model(0.1, 0.2, 200);
 y0 = [0, 0]';
 u = @(t) open_loop_controller(t, @desired_velocity, joint);
-d = @(t) 10;
+d = @(t) 20*sin(t);
 dynamic = @(t, y) joint_dynamics(joint, t, y, u, d);
 tspan = [0, 10];
 [t, y] = ode45(dynamic, tspan, y0);

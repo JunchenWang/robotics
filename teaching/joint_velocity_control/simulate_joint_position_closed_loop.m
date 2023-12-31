@@ -1,26 +1,27 @@
 function simulate_joint_position_closed_loop
 joint = joint_model(0.1, 0.2, 200);
 y0 = [0.5, 1, 0, 0]';
-Kp = 1;
-Ki = 2;
+Kp = 2;
+Ki = 4;
 Kp_pos = 10;
 Ki_pos = 0;
-Kd_pos = 1;
+Kd_pos = 0;
 p = @(t, y) pos_controller(t, y, @desired_pos, Kp_pos, Ki_pos, Kd_pos);
 u = @(t, y) speed_controller(t,y, p, Kp, Ki);
-d = @(t, y) 10;
+d = @(t, y) 10*sin(t);
 dynamic = @(t, y) joint_dynamics(joint, t, y, u, d);
 tspan = [0, 10];
 [t, y] = ode45(dynamic, tspan, y0);
 q_d = desired_pos(t);
-plot(t, y(:,1), 'b-', t, q_d, 'r-', 'LineWidth',2);
-title('关节位置控制Kp=10,Ki=0,Kd=1');
+plot(t, y(:,1), 'b-', t, q_d, 'r--', 'LineWidth',2);
+title('关节位置闭环控制');
 xlabel('$t$ / s','interpreter','latex');
 xticks(linspace(0,10, 11));
 ylabel('$q$ / (rad)', 'interpreter','latex');
-set(gca,'FontSize', 16);
+set(gca,'FontSize', 32);
 lg = legend('仿真位置','期望位置');
-fontsize(lg,14,'points')
+fontsize(lg,32,'points');
+set(gcf,'Position',[100 100 1200 800]);
 end
 function [qd, qe] = pos_controller(t, y, q_d, Kp, Ki, Kd)
     [q_d, qd_d] = q_d(t);
