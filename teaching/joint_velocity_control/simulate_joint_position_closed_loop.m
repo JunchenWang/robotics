@@ -18,6 +18,7 @@ title('关节位置闭环控制');
 xlabel('$t$ / s','interpreter','latex');
 xticks(linspace(0,10, 11));
 ylabel('$q$ / (rad)', 'interpreter','latex');
+ylim([-3,3]);
 set(gca,'FontSize', 32);
 lg = legend('仿真位置','期望位置');
 fontsize(lg,32,'points');
@@ -39,7 +40,7 @@ function [u, qed, qe] = speed_controller(t, y, qd_d, Kp, Ki)
 end
 function [q_d, qd_d] = desired_pos(t)
     q_d = 2 * sin(t);
-    qd_d = 2 * cos(t);
+    qd_d = 0;%2 * cos(t);
     % q_d = 2 * ones(size(t));
     % qd_d = 0;
 end
