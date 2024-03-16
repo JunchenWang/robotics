@@ -1,4 +1,5 @@
 function [angles, flag] =UR_inverse_kin(robot, Td, ref)
+% deprecated, do not use
 % test: q = [0.1328   -1.6864   -0.0698    0.7795    1.1255   -0.6565];
 % test: q =  [-0.0635   -2.0865    3.0076    1.3364    0.0030   -0.1817];
 dist = 1e10;

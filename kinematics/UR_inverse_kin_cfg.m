@@ -1,4 +1,6 @@
 function angles =UR_inverse_kin_cfg(T, cfg, t6_ref)
+% deprecated, do not use
+
 %输入关节6相对于基�?0的T矩阵
 %输出8组可能的解angles，每�?列为theta1-6�?
 %cfg为三�?1�?-1，分别表示（theta1+fai）的cos值，theta5及theta3的cos正负值，顺序�?1,3,5

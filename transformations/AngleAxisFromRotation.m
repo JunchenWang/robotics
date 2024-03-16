@@ -11,6 +11,6 @@ if nargout == 2
     if theta > 0
         r = r / theta;
     else
-        r = [0, 0, 1];
+        r = [0, 0, 1]';
     end
 end

@@ -1,4 +1,5 @@
 function T =UR_forward_kin(theta) %theta 单位为rad
+% deprecated, do not use
 dh_table=[0,0,0.1625,theta(1);
           pi/2,0,0,pi+theta(2);
           0,0.425,0,theta(3);

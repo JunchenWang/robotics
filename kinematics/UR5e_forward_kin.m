@@ -1,4 +1,5 @@
 function T =UR5e_forward_kin(theta) %theta 单位为rad
+% deprecated, do not use
 % read from UR52 robot controller
 a = [0.0, -0.425, -0.3922, 0.0, 0.0, 0.0];
 d = [0.1625, 0.0, 0.0, 0.1333, 0.0997, 0.0996];
