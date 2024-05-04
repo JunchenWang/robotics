@@ -1,4 +1,4 @@
-function [J, dJ, x] = rcm_jacobian(robot, q, dq, p1_F, p2_F, rcm)
+function [J, dJ, x, error] = rcm_jacobian(robot, q, dq, p1_F, p2_F, rcm)
 % x: the nearest point on p1-p2 to rcm. rcm is defined in base frame.
 T1 = [eye(3), p1_F; 0 0 0 1];
 T2 = [eye(3), p2_F; 0 0 0 1];
@@ -26,6 +26,7 @@ vn2 = dot(v,v);
 vn4 = vn2 * vn2;
 lambda = dot(u,v) / vn2;
 x = P1 + lambda * (P2 - P1);
+error = norm(x - rcm);
 term1 = 2*dot(u,v)*v' - (u + v)' / vn2;
 term2 = u' / vn2 - 2 * dot(u,v) * v';
 J_lambda = term1 * J1 + term2 * J2;
@@ -35,7 +36,6 @@ dJ_lambda = dterm1 * J1 + term1 * dJ1 + dterm2 * J2 + term2 * dJ2;
 
 J = J1 + lambda * (J2 - J1) + v * J_lambda;
 dJ = dJ1 + J_lambda * dq * (J2 - J1) + lambda * (dJ2 - dJ1) + dv * J_lambda + v * dJ_lambda;
-
 
 
 
