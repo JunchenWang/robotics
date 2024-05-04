@@ -26,8 +26,16 @@ dx = (x - rcm) / dt;
 
 
 
-[J, dJ] = rcm_jacobian(robot, q, dq, p1_F, p2_F, rcm);
-[J1, ~] = rcm_jacobian(robot, q1, dq, p1_F, p2_F, rcm);
-dJ_diff = (J1 - J) /dt;
-norm(dx - J * dq) / norm(dx)
-norm(dJ_diff - dJ) / norm(dJ_diff)
+[J, dJ, ~, error] = rcm_jacobian(robot, q, dq, p1_F, p2_F, rcm);
+d = P2_0 - P1_0;
+dd = null(d');
+dd = dd(:,1);
+dd = rand(3,1);
+dq = J \ dd;
+norm(J * dq - dd)
+disp(error);
+cond(J)
+% [J1, ~] = rcm_jacobian(robot, q1, dq, p1_F, p2_F, rcm);
+% dJ_diff = (J1 - J) /dt;
+% norm(dx - J * dq) / norm(dx)
+% norm(dJ_diff - dJ) / norm(dJ_diff)
