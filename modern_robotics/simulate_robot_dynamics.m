@@ -1,7 +1,7 @@
 function simulate_robot_dynamics
 %% read robot parameters
 port = udpport("byte");
-robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));
+robot = readRobotJson('iiwa7.json');
 n = robot.dof;
 MassMatrix = @(t, y) [eye(n), zeros(n); zeros(n), mass_matrix(robot, y(1:n))];
 opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot(t, y, flag, port, robot));
