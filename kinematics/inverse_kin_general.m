@@ -40,7 +40,7 @@ angles = mod(angles + pi, 2*pi) - pi;
 if ~notYet
     flag = 1;
 else
-    % disp('nolinear');
+    % disp('non-linear');
     [angles, flag] = inverse_kin_general_lsqnonlin(robot, Td, ref(:), tol);
 end
 end
