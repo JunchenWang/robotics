@@ -16,7 +16,7 @@ classdef LinearTrajectory
                 obj.pps{i} = pp{1};
             end
         end
-        function [Td, vel, acc] = desired_pose(obj, t, y)
+        function [Td, vel, acc] = desired_pose(obj, t)
             flag = 0;
             for i = 1 : obj.n
                 if obj.tnodes(i) <= t && t <= obj.tnodes(i + 1)

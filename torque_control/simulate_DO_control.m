@@ -3,263 +3,164 @@ function simulate_DO_control
 port = udpport("byte");
 robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));
 robot2 = robot;
-% robot2.mass = 1.2*robot.mass;% error
+robot2.mass = 1.2*robot.mass;% error
 n = robot.dof;
-Kx = zeros(6,6,3);
-Bx = zeros(6,6,3);
-
-choice = 2;
-
-Kx(:,:,1) = 10 * eye(6);% pd
-Bx(:,:,1) = 10 * eye(6);
-
-Kx(:,:,2) = 1000 * eye(6);% pd+,K B可以大，其他的不能大，否则力矩过大
-Bx(:,:,2) = 200 * eye(6);
-
-Kx(:,:,3) = 5 * eye(6);% passivity
-Bx(:,:,3) = 5 * eye(6);
-
-Bn = 2 * eye(n);
-Kn = 10 * eye(n);
+Kx = 3000 * eye(6);
+Bx = 300 * eye(6);
+Bn = 1 * eye(n);
+Kn = 1 * eye(n);
 tspan = [0, 10];
 MassMatrix = @(t, y) [eye(n), zeros(n, 2 * n); zeros(n), mass_matrix(robot, y(1:n)), zeros(n); zeros(n, 2 * n), eye(n)];
-opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot(t, y, flag, port, robot));
+opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot_micsys(t, y, flag, port, robot));
 
 y0 = zeros(3*n,1);
 y0(1:n) = [0 75 0 -94 0 -81 0] / 180 * pi;
-% y0(1:n) = [  -0.4689    0.4696         0   -1.0671    0.0670    1.2112   -0.3207];
-ptp(port, y0(1:n)');
+ptp_move(port, y0(1:n)');
+
 kesai = cal_kuka_kesai(y0);
 Ts = forward_kin_general(robot, y0);
 Te = Ts;
 Te(3,4) = Te(3,4) + 0.5;
-
-freq = 500;
-N = tspan(2) * freq + 1;
-[~,~,~,~,pp] = trapveltraj([0, 1], N, 'EndTime', tspan(2));
-pp = pp{1};
-p = @(t) desired_task_pos(t, Ts, Te, pp, fnder(pp, 1), fnder(pp, 2));
+Td = {Ts, Te};
+traj = LinearTrajectory(tspan, Td);
+p = @(t) traj.desired_pose(t);
 
 Y = 100 * eye(n);
-controller = @(t, y) DO_controller(robot2, p, choice, Kx, Bx, Bn, Kn, kesai, Y, t, y);
-control_target = @(t, y) manipulator_dynamics_observer(robot, controller, @(t, y) Wrench(t, y, robot), t, y);
-[t,y] = ode15s(control_target,tspan,y0,opts);
+DOB = @(robot, tau, M, C, G, J, y) manipulator_DOB(robot, Y, tau, M, C, G, J, y);
+controller = @(t, y, Fext) PD_controller(robot2, p, Kx, Bx, Kn, Bn, kesai, DOB, t, y);
+target_sysm = @(t, y) manipulator_dynamics_general(robot, controller, @(t, y) Wrench(t, y, robot), t, y);
+[t,y] = ode15s(target_sysm,tspan,y0,opts);
 cnt = length(t);
 torque = zeros(cnt, n);
+t_d = zeros(cnt, n);
 pos_error = zeros(cnt, 1);
-rot_error = zeros(cnt, 1); 
+rot_error = zeros(cnt, 1);
 phi = zeros(cnt,1);
 for i = 1 : cnt
-    Xd = p(t(i));
-    X = forward_kin_general(robot, y(i, 1:n)) ;
+    Td = p(t(i));
+    T = forward_kin_general(robot, y(i, 1:n)) ;
     phi(i) = cal_kuka_kesai(y(i, 1:n));
-    pos_error(i) = norm(Xd(1:3,4) - X(1:3,4));
-    rot_error(i) = norm(logR(X(1:3,1:3)' * Xd(1:3,1:3)));
-    torque(i,:) = controller(t(i), y(i,:)');
+    pos_error(i) = norm(Td(1:3,4) - T(1:3,4));
+    rot_error(i) = norm(logR(T(1:3,1:3)' * Td(1:3,1:3)));
+    torque(i,:) = controller(t(i), y(i,:)', zeros(6,n));
+    t_d(i,:) = y(i,2*n +1:3*n) + y(i,n+1:2*n) * Y';
 end
-disp(pos_error(end));
+% disp(pos_error(end));
 
-figure;
-plot(t, y(:,2 * n + 1:end),'-', 'LineWidth', 2); % disturbance
-xlabel("$t$/s", 'interpreter','latex');
-ylabel('$\hat{\tau}_d$/Nm', 'interpreter','latex');
-% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
-xticks([0,1,2,3,4,5,6,7,8,9,10]);
-set(gca,'FontSize', 32);
-lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
-fontsize(lg,18,'points')
-set(gcf,'Position',[100 100 1200 800]);
+fs = 20;
+ls = 14;
+tl = tiledlayout(2,3);
+nexttile
+plot(t,y(:,n+1:2*n),'LineWidth',2);
+grid on;
+ylabel('$\dot{q}$/(rad/s)', 'interpreter','latex');
+set(gca,'FontSize', fs);
+lg = legend('J1', 'J2','J3','J4','J5','J6','J7', 'Orientation','horizontal');
+fontsize(lg,ls,'points')
 
-figure;
-plot(t, torque,'-', 'LineWidth', 2);
-xlabel("$t$/s", 'interpreter','latex');
-ylabel('$\tau$/Nm', 'interpreter','latex');
-% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
-xticks([0,1,2,3,4,5,6,7,8,9,10]);
-set(gca,'FontSize', 32);
-lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
-fontsize(lg,18,'points')
-set(gcf,'Position',[100 100 1200 800]);
+nexttile
+plot(t,t_d,'LineWidth',2);
+grid on;
+ylabel('$\tau_d$/(Nm)', 'interpreter','latex');
+set(gca,'FontSize', fs);
+lg = legend('J1', 'J2','J3','J4','J5','J6','J7', 'Orientation','horizontal');
+fontsize(lg,ls,'points')
 
-figure;
-plot(t, rot_error,'-', 'LineWidth', 2);
-xlabel("$t$/s", 'interpreter','latex');
-ylabel('$||r_e||$/rad', 'interpreter','latex');
-% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
-xticks([0,1,2,3,4,5,6,7,8,9,10]);
-set(gca,'FontSize', 32);
-% lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
-% fontsize(lg,18,'points')
-set(gcf,'Position',[100 100 1200 800]);
-
-figure;
-plot(t, pos_error,'-', 'LineWidth', 2);
-xlabel("$t$/s", 'interpreter','latex');
-ylabel('$||p_e||$/m', 'interpreter','latex');
-% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
-xticks([0,1,2,3,4,5,6,7,8,9,10]);
-set(gca,'FontSize', 32);
-% lg = legend('关节1','关节2','关节3','关节4','关节5','关节6','关节7','Orientation','horizontal');
-% fontsize(lg,18,'points')
-set(gcf,'Position',[100 100 1200 800]);
-
-figure;
-plot(t, phi,'-', 'LineWidth', 2);
-xlabel("$t$/s", 'interpreter','latex');
-ylabel('臂角/rad', 'interpreter','latex');
-% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
-xticks([0,1,2,3,4,5,6,7,8,9,10]);
-set(gca,'FontSize', 32);
-set(gcf,'Position',[100 100 1200 800]);
-end
+nexttile
+plot(t,torque,'LineWidth',2);
+grid on;
+ylabel('$\tau$/(Nm)', 'interpreter','latex');
+set(gca,'FontSize', fs);
+lg = legend('J1', 'J2','J3','J4','J5','J6','J7', 'Orientation','horizontal');
+fontsize(lg,ls,'points')
 
 
-function [Td, vel, acc] = desired_task_pos(t, Ts, Te, pp, ppd, ppdd)
-% line with 
-s = ppval(pp, t);
-sd = ppval(ppd, t);
-sdd = ppval(ppdd, t);
-ps = Ts(1:3,4);
-pe = Te(1:3,4);
-Rs = Ts(1:3,1:3);
-Re = Te(1:3,1:3);
-pd = ps + (pe - ps)*s;
-xe = logR(Rs'*Re)';
-Rd = Rs * exp_w(xe*s);
-Td = [Rd, pd; 0 0 0 1];
-vel = [Rs * xe; (pe - ps)] * sd;
-acc = [Rs * xe; (pe - ps)] * sdd;
+nexttile
+plot(t,pos_error*1e3,'LineWidth',2);
+grid on;
+ylabel('$||p_e||$/(mm)', 'interpreter','latex');
+set(gca,'FontSize', fs);
+
+
+nexttile
+plot(t,rot_error,'LineWidth',2);
+grid on;
+ylabel('$||r_e||$/(rad)', 'interpreter','latex');
+set(gca,'FontSize', fs);
+
+nexttile
+plot(t,phi,'LineWidth',2);
+grid on;
+ylabel('arm angle/(rad)', 'interpreter','latex');
+set(gca,'FontSize', fs);
+
+tl.TileSpacing = 'tight';
+tl.Padding = 'compact';
+title(tl,'Simulation Result', 'FontSize', fs);
+xlabel(tl,"$t$/s", 'interpreter','latex', 'FontSize', fs);
+set(gcf, 'Position', get(0, 'Screensize'));
+% set(gcf,'Position',[0 0 1800 1000]);
 end
 
-function [tao, td] = DO_controller(robot, desired_pos, choice, Kx, Bx, Bn, Kn, kesai, Y, t, y)
-% Xd is desired motion in task space
+function [tau, daux] = PD_controller(robot, desired_motion, Kx, Bx, Kn, Bn, kesai, DOB, t, y)
 n = robot.dof;
-q = y(1:n);% + 1e-3 * rand(1, 7); % noise
-qd = y(n + 1: 2 * n);% + 1e-3 * rand(1, 7); %noise
-[M, C, G, Jb, dJb, dM, dX, X] = m_c_g_matrix(robot,q,qd);
-R = X(1:3,1:3);
-p = X(1:3,4);
-Vb = Jb * qd;
+q = y(1:n);
+dq = y(n + 1 : 2 * n);
+[M, C, G, Jb, dJb, dM, dT, T] = m_c_g_matrix(robot,q,dq);
+R = T(1:3,1:3);
+p = T(1:3,4);
+Vb = Jb * dq;
 wb = Vb(1:3);
 v = R * Vb(4:6);
+dx = [wb; v];
 Jh = [eye(3), zeros(3); zeros(3), R];
-dJh = [zeros(3), zeros(3); zeros(3), dX(1:3,1:3)];
-dJb = dJh * Jb + Jh * dJb;
-Jb = Jh * Jb;
-td = y(2 * n + 1 : end);
+dJh = [zeros(3), zeros(3); zeros(3), dT(1:3,1:3)];
+dJ = dJh * Jb + Jh * dJb;
+J = Jh * Jb;
 
-[Xd, vel, acc] = desired_pos(t);
-Rd = Xd(1:3, 1:3);
-pd = Xd(1:3, 4);
+[Td, vel, acc] = desired_motion(t);
+Rd = Td(1:3, 1:3);
+pd = Td(1:3, 4);
 wd = R' * vel(1:3);
 vd = vel(4:6);
 alphad = R' * acc(1:3);
 ad = acc(4:6);
-
-q0 = inverse_kin_kuka_robot_kesai_near(robot, Xd, kesai, q);
-% q0 = inverse_kin_kuka_kesai_near(Xd, kesai, q);
-% if isempty(q0)
-%     error('no inverse');
-% end
-Vd = [wd;vd];
-dVd = [alphad - cross(wb, wd) ;ad];
+dxd = [wd;vd];
+ddxd = [alphad - cross(wb, wd) ;ad];
 xe = [logR(R'*Rd)'; pd - p];
-dxe = Vd - [wb;v];
+dxe = dxd - dx;
 
-Z = null_z(Jb);
-dZ = derivative_null_z(Jb, dJb);
+ddxc = ddxd + A_x_inv(J, M) * ((Mu_x(J, M, dJ, C) + Bx) * dxe + Kx * xe); % PD+
+% if choice == 1 % pd
+%     ddxc = ddxd + Kx * xe + Bx * dxe;
+% elseif choice == 2 % pd+
+%     ddxc = ddxd + A_x_inv(J, M) * ((Mu_x(J, M, dJ, C) + Bx) * dxe + Kx * xe); % PD+
+% else % passivity
+%     s = dxe + Kx  * xe;
+%     ddxc = ddxd + Kx * dxe + A_x_inv(J, M) * ((Mu_x(J, M, dJ, C) + Bx)) * s );
+% end
 
-if choice == 1 % pd
-ax1 = dVd + Kx(:,:,1) * xe + Bx(:,:,1) * dxe;
-elseif choice == 2 % pd+
-ax1 = dVd + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Bx(:,:,2)) * dxe + Kx(:,:,2) * xe); % PD+
-else % passivity
-s = dxe + Kx(:,:,3)  * xe;
-ax1 = dVd + Kx(:,:,3) * dxe + A_x_inv(Jb, M) * ((Mu_x(Jb, M, dJb, C) + Bx(:,:,3)) * s );
-end
+a1 = pinv_J_x(J, M, ddxc - dJ * dq);
 
-
-a1 = pinv_J_x(Jb, M, ax1 - dJb * qd);
+q0 = inverse_kin_kuka_robot_kesai_near(robot, Td, kesai, q);
 qe = q0 - q;
-qed = -qd;
-a2 = null_proj(Jb, M, M \ (Bn * qed + Kn * qe));
+qed = -dq;
+a2 = null_proj(J, M, M \ (Bn * qed + Kn * qe));
+% Z = null_z(J);
+% dZ = derivative_null_z(J, dJ);
+% ax2 = A_v(Z, M) \ ((Mu_v(Z, M, dZ, dM, C) + Bn(1)) * (-pinv_Z(Z, M) * dq) + Z' * Kn(1) * qe);
+% a2 = Z * (ax2 - derivative_pinv_Z(Z, M, dZ, dM) * dq);
 
-% N = eye(n) - pinv(Jb) * Jb;
-% a2 =  N * (M \ (Bn * qed + Kn * qe));
+tau = M * (a1 + a2) + C * dq + G;
 
-% ax2 = A_v(Z, M) \ ((Mu_v(Z, M, dZ, dM, C) + Bn(1)) * (-pinv_Z(Z, M) * qd) + Z' * Kn(1) * qe);
-% a2 = Z * (ax2 - derivative_pinv_Z(Z, M, dZ, dM) * qd);
-
-% tao = M * (a1 + a2) + C * qd + G;
-% td = -Y * pinv_J_x(Jb, M, s);
-P = Y * qd;
-tao_d = td + P;
-% tao_d = tao_d - M * Z * pinv_Z(Z, M) * tao_d;
-tao_d = Jb' * ((Jb * (M \ Jb'))  \ (Jb * (M \ tao_d))); % minus the component projected into the null space !
-% disp(tao_d);
-tao = M * (a1 + a2) + C * qd + G - tao_d;
-td = Y * (M \ (C * qd + G - tao - P - td));
+[tau, daux] = DOB(robot, tau, M, C, G, J, y);
 end
-
-
-function yd = manipulator_dynamics_observer(robot, controller, fext, t, y)
-% fext is a force function applied to the robot
-% fext(t,y)(:,end) is applied to TCP and others are applied to link frames
-n = robot.dof;
-yd = zeros(3*n,1);
-q = y(1:n);
-qd = y(n + 1 : 2 * n);
-hqqd = gravity_velocity_torque(robot, q, qd);
-yd(1:n) = qd;
-ext_torque = get_ext_torque(robot, q, fext(t, y));
-[tau, td] = controller(t, y);
-yd(n + 1 : 2 * n) = tau - hqqd + ext_torque;
-yd(2 * n + 1 : end) = td;
-end
-
 
 function F = Wrench(t, y, robot)
 F = zeros(6, robot.dof);
 if t > 2 && t < 8
-    F(:,4) = [0, 0, 0, 0, 0, 20]';
-    % F(:,7) = [0, 0, 0, 0, 0, 0]';
+    F(:,4) = [0, 0, 0, 0, 0, 10]';
+    % F(:,7) = [0, 0, 0, 0, 0, 10]';
 end
 end
 
-
-function ret = odeplot(t, y, flag, port, robot)
-if strcmp(flag, 'init') == 1
-elseif isempty(flag)
-    setJoints(port, y(1:robot.dof, end));
-else
-end
-ret = 0;
-end
-
-function ptp(port, jts, vel)
-if nargin < 3
-    vel = .4;
-end
-start = queryJoints(port);
-wayPoints = [start',jts'];
-Freq = 200;
-rate = rateControl(Freq);
-T = max(abs(jts - start) / vel);
-numSamples = round(T * Freq) + 1;
-jt = trapveltraj(wayPoints,numSamples);
-for i = 1 : numSamples
-    setJoints(port, jt(:,i));
-    waitfor(rate);
-end
-end
-
-function setJoints(port, jt)
-cmd = 'robot;' + join(string(jt),';') + ';';
-writeline(port,cmd,"127.0.0.1",7755);
-end
-
-function joints = queryJoints(port)
-writeline(port,"robot;","127.0.0.1",7755);
-s = split(readline(port), ';');
-joints = double(s(1:end-1))';
-end

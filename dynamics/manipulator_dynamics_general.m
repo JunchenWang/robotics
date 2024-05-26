@@ -7,10 +7,12 @@ qd = y(n + 1 : 2 * n);
 hqqd = gravity_velocity_torque(robot, q, qd);
 Fext = fext(t, y);
 ext_torque = get_ext_torque(robot, q, Fext);
-[tau, td] = controller(t, y, Fext);
-sz = length(td);
+[tau, daux] = controller(t, y, Fext);
+sz = length(daux);
 yd = zeros(2 * n + sz, 1);
 yd(1:n) = qd;
 yd(n + 1 : 2 * n) = tau - hqqd + ext_torque;
-yd(2 * n + 1 : end) = td;
+if sz > 0
+    yd(2 * n + 1 : end) = daux;
+end
 end
