@@ -1,15 +1,14 @@
-function simulate_DO_control
-
+function simulate_VF_control
+% null space damping, no spring
 port = udpport("byte");
 robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));
 nominal_robot = robot;
-nominal_robot.mass = 1.2*robot.mass;% error
+% nominal_robot.mass = 1.2*robot.mass;% error
 n = robot.dof;
 Kx = 3000 * eye(6);
 Bx = 300 * eye(6);
-Bn = 1 * eye(n);
-Kn = 1 * eye(n);
-tspan = [0, 10];
+Bn = 2 * eye(n);
+tspan = [0, 8];
 MassMatrix = @(t, y) [eye(n), zeros(n, 2 * n); zeros(n), mass_matrix(robot, y(1:n)), zeros(n); zeros(n, 2 * n), eye(n)];
 opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot_micsys(t, y, flag, port, robot));
 
@@ -17,17 +16,16 @@ y0 = zeros(3*n,1);
 y0(1:n) = [0 75 0 -94 0 -81 0] / 180 * pi;
 ptp_move(port, y0(1:n)');
 
-kesai = cal_kuka_kesai(y0);
 Ts = forward_kin_general(robot, y0);
 Te = Ts;
 Te(3,4) = Te(3,4) + 0.5;
-Td = {Ts, Te};
+Td = {Ts, Ts};
 traj = LinearTrajectory(tspan, Td);
 p = @(t) traj.desired_pose(t);
 
 Y = 100 * eye(n);
 DOB = @(robot, tau, M, C, G, J, y) manipulator_DOB(robot, Y, tau, M, C, G, J, y);
-controller = @(t, y, Fext) PD_controller(nominal_robot, p, Kx, Bx, Kn, Bn, kesai, DOB, t, y);
+controller = @(t, y, Fext) VF_controller(nominal_robot, p, Kx, Bx, Bn, DOB, t, y);
 target_sysm = @(t, y) manipulator_dynamics_general(robot, controller, @(t, y) Wrench(t, y, robot), t, y);
 [t,y] = ode15s(target_sysm,tspan,y0,opts);
 cnt = length(t);
@@ -102,7 +100,7 @@ set(gcf, 'Position', get(0, 'Screensize'));
 % set(gcf,'Position',[0 0 1800 1000]);
 end
 
-function [tau, daux] = PD_controller(robot, desired_motion, Kx, Bx, Kn, Bn, kesai, DOB, t, y)
+function [tau, daux] = VF_controller(robot, desired_motion, Kx, Bx, Bn, DOB, t, y)
 n = robot.dof;
 q = y(1:n);
 dq = y(n + 1 : 2 * n);
@@ -142,10 +140,8 @@ ddxc = ddxd + A_x_inv(J, M) * ((Mu_x(J, M, dJ, C) + Bx) * dxe + Kx * xe); % PD+
 
 a1 = pinv_J_x(J, M, ddxc - dJ * dq);
 
-q0 = inverse_kin_kuka_robot_kesai_near(robot, Td, kesai, q);
-qe = q0 - q;
 qed = -dq;
-a2 = null_proj(J, M, M \ (Bn * qed + Kn * qe));
+a2 = null_proj(J, M, M \ (Bn * qed));
 % Z = null_z(J);
 % dZ = derivative_null_z(J, dJ);
 % ax2 = A_v(Z, M) \ ((Mu_v(Z, M, dZ, dM, C) + Bn(1)) * (-pinv_Z(Z, M) * dq) + Z' * Kn(1) * qe);
@@ -158,9 +154,11 @@ end
 
 function F = Wrench(t, y, robot)
 F = zeros(6, robot.dof);
-if t > 2 && t < 8
-    F(:,4) = [0, 0, 0, 0, 0, 10]';
+if t > 2 && t < 4
+    F(:,4) = [0, 0, 0, 0, 0, 5]';
     % F(:,7) = [0, 0, 0, 0, 0, 10]';
+elseif t > 4 && t < 6
+    F(:,4) = [0, 0, 0, 0, 0, -5]';
 end
 end
 
