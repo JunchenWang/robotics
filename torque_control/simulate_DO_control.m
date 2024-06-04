@@ -25,7 +25,7 @@ Td = {Ts, Te};
 traj = LinearTrajectory(tspan, Td);
 p = @(t) traj.desired_pose(t);
 
-Y = 100 * eye(n);
+Y = 10 * eye(n);
 DOB = @(robot, tau, M, C, G, J, y) manipulator_DOB(robot, Y, tau, M, C, G, J, y);
 controller = @(t, y, Fext) PD_controller(nominal_robot, p, Kx, Bx, Kn, Bn, kesai, DOB, t, y);
 target_sysm = @(t, y) manipulator_dynamics_general(robot, controller, @(t, y) Wrench(t, y, robot), t, y);
@@ -45,7 +45,7 @@ for i = 1 : cnt
     torque(i,:) = controller(t(i), y(i,:)', zeros(6,n));
     t_d(i,:) = y(i,2*n +1:3*n) + y(i,n+1:2*n) * Y';
 end
-% disp(pos_error(end));
+disp(pos_error(end));
 
 fs = 20;
 ls = 14;
@@ -54,24 +54,27 @@ nexttile
 plot(t,y(:,n+1:2*n),'LineWidth',2);
 grid on;
 ylabel('$\dot{q}$/(rad/s)', 'interpreter','latex');
+xlabel("$t$/s", 'interpreter','latex', 'FontSize', fs);
 set(gca,'FontSize', fs);
-lg = legend('J1', 'J2','J3','J4','J5','J6','J7', 'Orientation','horizontal');
+lg = legend('关节1', '关节2','关节3','关节4','关节5','关节6','关节7', 'Orientation','horizontal');
 fontsize(lg,ls,'points')
 
 nexttile
 plot(t,t_d,'LineWidth',2);
 grid on;
-ylabel('$\tau_d$/(Nm)', 'interpreter','latex');
+ylabel('$\hat{\tau}_d$/(Nm)', 'interpreter','latex');
+xlabel("$t$/s", 'interpreter','latex', 'FontSize', fs);
 set(gca,'FontSize', fs);
-lg = legend('J1', 'J2','J3','J4','J5','J6','J7', 'Orientation','horizontal');
+lg = legend('关节1', '关节2','关节3','关节4','关节5','关节6','关节7', 'Orientation','horizontal');
 fontsize(lg,ls,'points')
 
 nexttile
 plot(t,torque,'LineWidth',2);
 grid on;
 ylabel('$\tau$/(Nm)', 'interpreter','latex');
+xlabel("$t$/s", 'interpreter','latex', 'FontSize', fs);
 set(gca,'FontSize', fs);
-lg = legend('J1', 'J2','J3','J4','J5','J6','J7', 'Orientation','horizontal');
+lg = legend('关节1', '关节2','关节3','关节4','关节5','关节6','关节7', 'Orientation','horizontal');
 fontsize(lg,ls,'points')
 
 
@@ -79,6 +82,7 @@ nexttile
 plot(t,pos_error*1e3,'LineWidth',2);
 grid on;
 ylabel('$||p_e||$/(mm)', 'interpreter','latex');
+xlabel("$t$/s", 'interpreter','latex', 'FontSize', fs);
 set(gca,'FontSize', fs);
 
 
@@ -86,19 +90,21 @@ nexttile
 plot(t,rot_error,'LineWidth',2);
 grid on;
 ylabel('$||r_e||$/(rad)', 'interpreter','latex');
+xlabel("$t$/s", 'interpreter','latex', 'FontSize', fs);
 set(gca,'FontSize', fs);
 
 nexttile
 plot(t,phi,'LineWidth',2);
 grid on;
 ylabel('arm angle/(rad)', 'interpreter','latex');
+xlabel("$t$/s", 'interpreter','latex', 'FontSize', fs);
 set(gca,'FontSize', fs);
 
 tl.TileSpacing = 'tight';
 tl.Padding = 'compact';
-title(tl,'Simulation Result', 'FontSize', fs);
-xlabel(tl,"$t$/s", 'interpreter','latex', 'FontSize', fs);
+% title(tl,'仿真结果', 'FontSize', fs);
 set(gcf, 'Position', get(0, 'Screensize'));
+% xlabel(tl, "$t$/s", 'interpreter','latex', 'FontSize', fs);
 % set(gcf,'Position',[0 0 1800 1000]);
 end
 
@@ -130,14 +136,14 @@ ddxd = [alphad - cross(wb, wd) ;ad];
 xe = [logR(R'*Rd)'; pd - p];
 dxe = dxd - dx;
 
-ddxc = ddxd + A_x_inv(J, M) * ((Mu_x(J, M, dJ, C) + Bx) * dxe + Kx * xe); % PD+
+% ddxc = ddxd + A_x_inv(J, M) * ((Mu_x(J, M, dJ, C) + Bx) * dxe + Kx * xe); % PD+
 % if choice == 1 % pd
-%     ddxc = ddxd + Kx * xe + Bx * dxe;
+    ddxc = ddxd + Kx * xe + Bx * dxe;
 % elseif choice == 2 % pd+
-%     ddxc = ddxd + A_x_inv(J, M) * ((Mu_x(J, M, dJ, C) + Bx) * dxe + Kx * xe); % PD+
+    % ddxc = ddxd + A_x_inv(J, M) * ((Mu_x(J, M, dJ, C) + Bx) * dxe + Kx * xe); % PD+
 % else % passivity
-%     s = dxe + Kx  * xe;
-%     ddxc = ddxd + Kx * dxe + A_x_inv(J, M) * ((Mu_x(J, M, dJ, C) + Bx)) * s );
+    % s = dxe + Kx  * xe;
+    % ddxc = ddxd + Kx * dxe + A_x_inv(J, M) * ((Mu_x(J, M, dJ, C) + Bx)) * s;
 % end
 
 a1 = pinv_J_x(J, M, ddxc - dJ * dq);
@@ -158,9 +164,9 @@ end
 
 function F = Wrench(t, y, robot)
 F = zeros(6, robot.dof);
-if t > 2 && t < 8
+if t > 1 
     F(:,4) = [0, 0, 0, 0, 0, 10]';
-    % F(:,7) = [0, 0, 0, 0, 0, 10]';
+    F(:,7) = [0, 0, 0, 0, 0, 10]';
 end
 end
 
