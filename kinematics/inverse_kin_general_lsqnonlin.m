@@ -21,8 +21,8 @@ else
     rd2 = rd;
 end
 td = Td(1:3,4);
-[Jb, T] = jacobian_matrix(robot, x);
-g = -analytic_jacobian_matrix(Jb, T);
+[Ja, T] = jacobian_matrix_analytic(robot, x);
+g = -Ja;
 r = logR(T(1:3,1:3))';
 t = T(1:3,4);
 if norm(rd2 - r) > norm(rd - r)
