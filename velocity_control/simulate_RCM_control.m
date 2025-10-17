@@ -2,7 +2,7 @@ function simulate_RCM_control
 % 双环控制7轴机器人轨迹，状态空间4个变量：位置，速度，速度误差积分，位置误差积分
 port = udpport("byte");
 opts = odeset('OutputFcn', @(t, y, flag) odeplot(t, y, flag, port));
-robot = convert_robot_tree(importrobot('urdf\iiwa7\iiwa7.urdf'));
+robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));
 n = robot.dof;
 y0 = zeros(4 * n, 1);
 
@@ -119,7 +119,7 @@ q = y(1:n);
 lambda = y(end);
 Jb = jacobian_matrix(robot, q);
 T = forward_kin_general(robot, q);
-q0 = inverse_kin_kuka_robot_kesai_near(robot, T, kesai, q)';
+q0 = inverse_kin_kuka_robot_kesai_near(robot, T, kesai, q);
 R = T(1:3,1:3);
 p = T(1:3,4);
 J1 = adjoint_T(Tp1) * Jb;

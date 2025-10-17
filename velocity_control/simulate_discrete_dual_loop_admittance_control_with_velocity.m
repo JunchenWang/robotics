@@ -62,7 +62,7 @@ tic;
 for i = 1 : cnt
     t = (i - 1) * dt;
     tt(i) = t;
-    [Td, vel, acc] = motion_planner.desired_pose(t, y);
+    [Td, vel, acc] = motion_planner.desired_pose(t);
     %%前馈
     Rd = Td(1:3,1:3);
     pd = Td(1:3,4);

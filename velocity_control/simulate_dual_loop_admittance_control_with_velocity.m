@@ -65,7 +65,7 @@ phi = zeros(cnt,1);
 force = zeros(cnt, 6);
 tic;
 for i = 1 : cnt
-    [Td, vel, acc] = motion_planner.desired_pose(t(i), y(i,1:n)');
+    [Td, vel, acc] = motion_planner.desired_pose(t(i));
     fext = Wrench(t(i), y(i,1:n)', refZ, stiffness, robot);
     X = forward_kin_general(robot, y(i,1:n)');
     phi(i) = cal_kuka_kesai(y(i, 1:n)');
@@ -148,7 +148,7 @@ function [Td, vel, acc, state] = addmittance_controller(robot, motion_planner, M
     Fex = -Fex(:,end);
     state = zeros(12,1);
 
-    [Td, vel, acc] = motion_planner.desired_pose(t, y);
+    [Td, vel, acc] = motion_planner.desired_pose(t);
     Rd = Td(1:3,1:3);
     pd = Td(1:3,4);
     wd = vel(1:3);
