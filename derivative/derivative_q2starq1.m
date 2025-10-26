@@ -1,0 +1,9 @@
+function [J2, J1] = derivative_q2starq1(q2, q1)
+q1 = q1(:);
+q2 = q2(:);
+a1 = q1(1);
+v1 = q1(2 : 4);
+a2 = q2(1);
+v2 = q2(2 : 4);
+J1 = a2 * eye(4) + [0 -v2'; v2 SkewMatrix(v2)];
+J2 = a1 * eye(4) + [0 -v1'; v1 -SkewMatrix(v1)];

@@ -1,0 +1,11 @@
+function [J Jb] = derivative_fxfbfx_(fx, fb)
+qdx = Frame2qd(fx);
+qdb = Frame2qd(fb);
+qd = ConcatenateDualQuaternions(qdx, qdb, Conjugate_qd(qdx));
+J1 = derivative_f_qd(qd);
+J2 = derivative_qdxqdbqdx_(qdx, qdb);
+J3 = derivative_qd_f(fx);
+J = J1 * J2 * J3;
+[J1 J2] = derivative_f2f1(fx, ConcatenateFrame(fb, InverseFrame(fx)));
+[J3 J4] = derivative_f2f1(fb, InverseFrame(fx));
+Jb = J2 * J3;
