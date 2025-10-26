@@ -4,7 +4,7 @@ port = udpport("byte");
 
 robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));
 n = robot.dof;
-opts = odeset('OutputFcn', @(t, y, flag) odeplot(t, y, flag, port, robot));
+opts = odeset('OutputFcn', @(t, y, flag) odeplot_micsys(t, y, flag, port, robot));
 y0 = zeros(3 * n + 6, 1);
 
 Kp_s = [100,100,100,100,100,100,100]';
@@ -21,19 +21,10 @@ r = 200;
 tspan = [0, 10];
 
 y0(1:n) = [0 75 0 -94 0 -81 0] / 180 * pi;
-ptp(port, y0(1:n)');
+ptp_move(port, y0(1:n)');
 % kesai = cal_kuka_kesai(y0);
 Ts = forward_kin_general(robot, y0);
-Te = Ts;
-prcm = Ts * [0;0;0.15;1];
-
-Te(1:3,4) = Te(1:3,4) + [-0.1; 0.4; 0.5];
-Te(1:3,1:3) = Te(1:3,1:3) *  RPY2R([0.4, 0.3, 0.2]);
-freq = 500;
-N = tspan(2) * freq + 1;
-[~,~,~,~,pp] = trapveltraj([0, 1], N, 'EndTime', tspan(2));
-pp = pp{1};
-p = @(t) desired_task_pos_cos(t, Ts, Te, pp, fnder(pp, 1), fnder(pp, 2));
+p = @(t) desired_task_pos_cos(t, Ts);
 v = @(t, y) task_pos_controller(t, y, p, robot, Kp_p, Ki_p, Kd_p);
 u = @(t, y) speed_controller(t, y, v, Kp_s, Ki_s);
 dynamic = @(t, y) joint_motor_dynamic(t, y, u, d, J, B, r);
@@ -118,111 +109,19 @@ desired_speed = lsqminnorm(Jb,[wb;vb]);
 end
 
 
-function [Td, Vd] = desired_task_pos(t, Ts, Te, pp, ppd, ppdd)
-s = ppval(pp, t);
-sd = ppval(ppd, t);
-sdd = ppval(ppdd, t);
-ps = Ts(1:3,4);
-pe = Te(1:3,4);
-Rs = Ts(1:3,1:3);
-Re = Te(1:3,1:3);
-pd = ps + (pe - ps)*s;
-xe = logR(Rs'*Re)';
-Rd = Rs * exp_w(xe*s);
-Td = [Rd, pd; 0 0 0 1];
-Vd = [Rs * xe; (pe - ps)] * sd;
-end
 
 
-function [Td, Vd] = desired_task_pos_cuttingline(t, path)
-
-Vd = zeros(6,1);
-end
 
 
-function [Td, Vd] = desired_task_pos_cos(t, Ts, Te, pp, ppd, ppdd)
-
+function [Td, Vd] = desired_task_pos_cos(t, Ts)
 ps = Ts(1:3,4);
 Rs = Ts(1:3,1:3);
 pd = ps + Rs * [0.1*sin(3*t);0.04*t;0];
-
 Td = [Rs, pd; 0 0 0 1];
 Vd = [zeros(3,1); Rs * [0.1*3*cos(3*t);0.04;0]];
 % Vd = zeros(6,1);
 end
 
-function [Td, Vd] = desired_task_pos_circle(t, Ts, Te, pp, ppd, ppdd)
-
-ps = Ts(1:3,4);
-Rs = Ts(1:3,1:3);
-pd = ps + Rs * [0.1*sin(2*t);0.1*cos(2*t) - 0.1;-0.01*t];
-
-Td = [Rs, pd; 0 0 0 1];
-Vd = [zeros(3,1); Rs * [0.2*cos(2*t);-0.2*sin(2*t);-0.01]];
-% Vd = zeros(6,1);
-end
-
-function [Td, Vd] = desired_task_pos_rcm(t, Ts, Te, pp, ppd, ppdd)
-s = ppval(pp, t);
-a = pi / 6 * s;
-b = pi / 6 * s;
-c = pi / 6 * s;
-d = s * 0.05;
-Td = Ts * generateRCM(d, a, b, c, [0,0,0.15]');
-Vd = zeros(6,1);
-end
-
-
-function T = generateRCM(d,a,b,c,p_rcm)
-% d in m, a b c in rad, p_rcm in m
-x_rcm = [1, 0, 0]';
-z_rcm = [0, 0, 1]';
-y_rcm = cross(z_rcm, x_rcm);
-St = sm2twist([p_rcm', z_rcm', inf, 1]) * d;
-% p_rcm = p_rcm - d * z_rcm;
-Sz = sm2twist([p_rcm', z_rcm', 0, 1]) * a;
-Sx = sm2twist([p_rcm', x_rcm', 0, 1]) * b;
-Sy = sm2twist([p_rcm', y_rcm', 0, 1]) * c;
-T = exp_twist(Sx)*exp_twist(Sy)*exp_twist(Sz)*exp_twist(St);
-end
-
-
-function ret = odeplot(t, y, flag, port, robot)
-if strcmp(flag, 'init') == 1
-elseif isempty(flag)
-    setJoints(port, y(1:robot.dof, end));
-else
-end
-ret = 0;
-end
-
-function ptp(port, jts, vel)
-if nargin < 3
-    vel = .4;
-end
-start = queryJoints(port);
-wayPoints = [start',jts'];
-Freq = 200;
-rate = rateControl(Freq);
-T = max(abs(jts - start) / vel);
-numSamples = round(T * Freq) + 1;
-jt = trapveltraj(wayPoints,numSamples);
-for i = 1 : numSamples
-    setJoints(port, jt(:,i));
-    waitfor(rate);
-end
-end
-
-function setJoints(port, jt)
-cmd = 'robot;' + join(string(jt),';') + ';';
-writeline(port,cmd,"127.0.0.1",7755);
-end
-
-function joints = queryJoints(port)
-writeline(port,"robot;","127.0.0.1",7755);
-s = split(readline(port), ';');
-joints = double(s(1:end-1))';
-end
 
 function yd = joint_motor_dynamic(t, y, u, d, J, B, r)
 % y(1): theta, y(2): w, y(3): sum e
