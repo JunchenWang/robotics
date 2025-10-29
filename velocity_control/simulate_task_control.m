@@ -33,7 +33,6 @@ dynamic = @(t, y) joint_motor_dynamic(t, y, u, d, J, B, r);
 
 pos_d = zeros(6, length(t));
 pos_actual = zeros(6, length(t));
-rcme = zeros(1, length(t));
 for i = 1 : length(t)
     T = forward_kin_general(robot, y(i,1:7));
     Td = p(t(i));
