@@ -36,20 +36,10 @@ pos_actual = zeros(6, length(t));
 rcme = zeros(1, length(t));
 for i = 1 : length(t)
     T = forward_kin_general(robot, y(i,1:7));
-    P1 = T * [0;0;0;1];
-    P2 = T * [0;0;0.3;1];
-    rcme(i) = dist2line(prcm, P1, P2);
     Td = p(t(i));
     pos_d(:, i) = Frame_T_Converter(Td);
     pos_actual(:,i) = Frame_T_Converter(T);
 end
-
-figure;
-plot(t, rcme, 'LineWidth', 2);
-xlabel("$t$/s", 'interpreter','latex');
-ylabel('$RMS error$/m', 'interpreter','latex');
-% yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
-set(gca,'FontSize', 36);
 
 figure;
 plot(t, pos_actual(1:3,:), t, pos_d(1:3,:), '--', 'LineWidth', 2);
