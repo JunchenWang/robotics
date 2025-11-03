@@ -24,7 +24,7 @@ for i = 1 : N
 %     pts(:,i) = t;
     cfg=[sign(angles(2)+eps), sign(angles(4)+eps),sign(angles(6)+eps)];
     tStart=tic;
-    [angles2, bds] = inverse_kin_kuka(R, t, cfg, lowers, uppers);
+    [angles2, bds] = inverse_kin_kuka(T, cfg, lowers, uppers);
     tElapsed=tElapsed+toc(tStart);
     if isempty(angles2)
         disp('no kesai');

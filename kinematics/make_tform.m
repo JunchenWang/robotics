@@ -5,6 +5,9 @@ if nargin == 0
     T = [eye(3), zeros(3, 1); 0 0 0 1];
     return;
 end
+if iscolumn(t)
+    t = t';
+end
 n = size(R, 3);
 T = zeros(4, 4, n);
 for i = 1 : n

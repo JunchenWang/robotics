@@ -1,4 +1,4 @@
-lbr = importrobot('..\urdf\iiwa7\iiwa7.urdf');
+lbr = importrobot('urdf\iiwa7\iiwa7.urdf');
 lowers = [-170, -120, -170, -120 ,-170, -120, -175] / 180 * pi;
 uppers = -lowers;
 % R = [
@@ -9,7 +9,7 @@ uppers = -lowers;
 cfg = [1,1,1];
 % R = T(1:3,1:3);
 % t = T(1:3,4);
-[angs, bounds] = inverse_kin_kuka(R, t, cfg,lowers, uppers);
+[angs, bounds] = inverse_kin_kuka(make_tform(R,t), cfg,lowers, uppers);
 q0 = homeConfiguration(lbr);
 color='cmkrgby';
 for i = 1 : 7
@@ -29,7 +29,7 @@ xlabel 'arm angle \psi';
 ylabel 'joint angle \theta'
 psi = linspace(-pi, pi, m);
 for kesai = psi
-    angs = inverse_kin_kuka_kesai(R, t, cfg, kesai);
+    angs = inverse_kin_kuka_kesai(make_tform(R,t), cfg, kesai);
     ang(cnt,:)=angs;
     cnt = cnt + 1;
 end

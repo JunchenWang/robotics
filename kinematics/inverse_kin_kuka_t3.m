@@ -1,14 +1,16 @@
-function angles = inverse_kin_kuka_t3(R, t, cfg, t3)
+function angles = inverse_kin_kuka_t3(Td, cfg, t3)
 % inverse_kin_kuka kuka med的运动学逆解
 % A3为冗余度信息, cfg符合kuka官方定义
 % kesai redundancy
 eps1 = 1e-6;
 eps2 = 1e-6;
+R = Td(1:3,1:3);
+t = Td(1:3, 4);
 z = [0, 0, 1]';
-d1 = 340;
-d3 = 400;
-d5 = 400;
-d7 =126;
+d1 = .340;
+d3 = .400;
+d5 = .400;
+d7 =.126;
 p02 = [0, 0, d1]';
 p67 = [0, 0, d7]';
 p26 = t - p02 - R * p67;

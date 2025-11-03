@@ -1,4 +1,4 @@
-function [angles, bounds, kesai] = inverse_kin_kuka(R, t, cfg,lowers, uppers)
+function [angles, bounds, kesai] = inverse_kin_kuka(Td, cfg,lowers, uppers)
 % inverse_kin_kuka kuka med的运动学逆解,自动选择kesai
 % cfg signs of axis 2,4,6
 if nargin < 4
@@ -11,13 +11,12 @@ kesai = [];
 eps1 = 1e-12;%not change
 eps0 = 1e-7;%not change
 z = [0, 0, 1]';
-d1 = 340;
-d3 = 400;
-d5 = 400;
-d7 =126;
-if isrow(t)
-    t = t';
-end
+d1 = .340;
+d3 = .400;
+d5 = .400;
+d7 =.126;
+R = Td(1:3,1:3);
+t = Td(1:3, 4);
 p02 = [0, 0, d1]';
 p67 = [0, 0, d7]';
 p26 = t - p02 - R * p67;
@@ -484,4 +483,68 @@ if isempty(kesais567)
     end
 end
 kesais = bd_union(bd_intersection(kesais123, kesais567));
+end
+
+
+function bounds = bd_intersection(bd1, bd2)
+if isempty(bd1) || isempty(bd2)
+    bounds = [];
+    return;
+end
+n1 = length(bd1)/2;
+n2 = length(bd2)/2;
+bounds = zeros(1,n1*n2);
+cnt = 0;
+for i = 1 : n1
+    for j = 1 : n2
+        a = max(bd1(2*i-1), bd2(2*j-1));
+        b = min(bd1(2*i), bd2(2*j));
+        if a<=b
+            cnt = cnt + 1;
+            bounds(2*cnt-1) = a;
+            bounds(2*cnt) = b;
+        end
+    end
+end
+bounds(2*cnt+1:end) = [];
+end
+
+
+function bounds = bd_union(bds)
+    n = length(bds)/2;
+    if n == 1
+        bounds = bds;
+        return;
+    end
+    bounds = zeros(1,2*n);
+    for i = 1 : n - 1
+        for j = 1 : n - i
+            if bds(2*j-1) > bds(2*j+1)
+                a = bds(2*j-1);
+                b = bds(2*j);
+                bds(2*j-1) = bds(2*j+1);
+                bds(2*j) = bds(2*j+2);
+                bds(2*j+1) = a;
+                bds(2*j+2) = b;
+            end
+        end
+    end
+    a = bds(1);
+    b = bds(2);
+    cnt = 0;
+    for i = 2 : n
+        if b < bds(2*i-1)
+            cnt = cnt + 1;
+            bounds(2*cnt - 1) = a;
+            bounds(2*cnt) = b;
+            a = bds(2*i-1);
+            b = bds(2*i);
+        else
+            b = bds(2*i);
+        end
+    end
+     cnt = cnt + 1;
+     bounds(2*cnt - 1) = a;
+     bounds(2*cnt) = b;
+     bounds(2*cnt + 1:end) = [];
 end
