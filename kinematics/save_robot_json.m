@@ -1,4 +1,4 @@
-function saveRobot2Json(robot, filename)
+function save_robot_json(robot, filename)
 % json format for matrix is row major!
 n = robot.dof;
 inertia = zeros(n, 6);

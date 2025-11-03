@@ -1,4 +1,4 @@
-function robot = readRobotJson(filename)
+function robot = read_robot_json(filename)
 fid = fopen(filename,'r'); 
 str = '';
 line_in = fgets(fid);
