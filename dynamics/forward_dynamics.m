@@ -1,4 +1,5 @@
 function qdd = forward_dynamics(robot, q, qd, tao, F_ME)
+% fext is applied to the env
 ME = robot.ME * robot.TCP;
 n = robot.dof;
 [Mq, J] = mass_matrix(robot, q);
