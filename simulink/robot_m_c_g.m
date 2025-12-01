@@ -40,7 +40,7 @@ block.OutputPort(2).DatatypeID       = 0;
 block.OutputPort(2).Complexity       = 'Real';
 
 % 配置输出端口属性 g
-block.OutputPort(3).Dimensions       = [n, 1];
+block.OutputPort(3).Dimensions       = n;
 block.OutputPort(3).DatatypeID       = 0;
 block.OutputPort(3).Complexity       = 'Real';
 
