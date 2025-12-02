@@ -32,8 +32,10 @@ end
 
 
 function Output(block, port)
+    if block.IsMajorTimeStep
     jt =  block.InputPort(1).Data;
     set_joints(port, jt);
+    end
 end
 
 function Terminate(block, port)
