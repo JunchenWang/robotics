@@ -39,6 +39,7 @@ block.OutputPort(2).Dimensions       = n;
 block.OutputPort(2).DatatypeID       = 0;
 block.OutputPort(2).Complexity       = 'Real';
 
+
 %% ② 设置模块的采样时间
 block.SampleTimes = [-1, 0];
 % [-1, 0] 表示继承采样时间
@@ -93,10 +94,12 @@ q = block.ContStates.Data(1:n);
 qd = block.ContStates.Data(n + 1 : end);
 tau = block.InputPort(1).Data(:);
 fext = block.InputPort(2).Data;
-hqqd = gravity_velocity_torque(robot, q, qd);
-ext_torque = get_ext_torque(robot, q, fext);
+% hqqd = gravity_velocity_torque(robot, q, qd);
+% ext_torque = get_ext_torque(robot, q, fext);
 M = mass_matrix(robot, q);
-block.Derivatives.Data = [qd; M \ (tau - hqqd + ext_torque)];
+% tem = cqd + g - ext_torque
+tem = inverse_dynamics_fext(robot, q, qd, zeros(n,1), fext);
+block.Derivatives.Data = [qd; M \ (tau - tem)];
 end
 
 % function Start(block)

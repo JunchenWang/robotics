@@ -3,12 +3,12 @@ function simulate_DO_control
 port = udpport("byte");
 robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));
 nominal_robot = robot;
-nominal_robot.mass = 1.2*robot.mass;% error
+nominal_robot.mass = robot.mass;% error
 n = robot.dof;
 Kx = 3000 * eye(6);
 Bx = 300 * eye(6);
 Bn = 1 * eye(n);
-Kn = 1 * eye(n);
+Kn = 0 * eye(n);
 tspan = [0, 10];
 MassMatrix = @(t, y) [eye(n), zeros(n, 2 * n); zeros(n), mass_matrix(robot, y(1:n)), zeros(n); zeros(n, 2 * n), eye(n)];
 opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot_micsys(t, y, flag, port, robot));
@@ -113,29 +113,40 @@ n = robot.dof;
 q = y(1:n);
 dq = y(n + 1 : 2 * n);
 [M, C, G, Jb, dJb, dM, dT, T] = m_c_g_matrix(robot,q,dq);
-R = T(1:3,1:3);
-p = T(1:3,4);
-Vb = Jb * dq;
-wb = Vb(1:3);
-v = R * Vb(4:6);
-dx = [wb; v];
-Jh = [eye(3), zeros(3); zeros(3), R];
-dJh = [zeros(3), zeros(3); zeros(3), dT(1:3,1:3)];
-dJ = dJh * Jb + Jh * dJb;
-J = Jh * Jb;
+% R = T(1:3,1:3);
+% p = T(1:3,4);
+% Vb = Jb * dq;
+% wb = Vb(1:3);
+% vb = Vb(4:6);
+% dx = [wb; vb];
+% Jh = [eye(3), zeros(3); zeros(3), R];
+% dJh = [zeros(3), zeros(3); zeros(3), dT(1:3,1:3)];
+% dJ = dJh * Jb + Jh * dJb;
+% J = Jh * Jb;
 
 [Td, vel, acc] = desired_motion(t);
-Rd = Td(1:3, 1:3);
-pd = Td(1:3, 4);
-wd = R' * vel(1:3);
-vd = vel(4:6);
-alphad = R' * acc(1:3);
-ad = acc(4:6);
-dxd = [wd;vd];
-ddxd = [alphad - cross(wb, wd) ;ad];
-xe = [logR(R'*Rd)'; pd - p];
-dxe = dxd - dx;
+% Rd = Td(1:3, 1:3);
+% pd = Td(1:3, 4);
+% wd = R' * vel(1:3);
+% vd = vel(4:6);
+% alphad = R' * acc(1:3);
+% ad = acc(4:6);
+% dxd = [wd;vd];
+% ddxd = [alphad - cross(wb, wd) ;ad];
+% xe = [logR(R'*Rd)'; pd - p];
+% dxe = dxd - dx;
 
+
+R = T(1:3,1:3);
+Rd = Td(1:3,1:3);
+p = T(1:3, 4);
+pd = Td(1:3, 4);
+V = Jb * dq;
+xe = [logR(R' * Rd)'; R' * (pd - p)];
+dxe = [R' * vel(1:3); R' * vel(4:6)] - V;
+ddxd = [R' * (acc(1:3) - cross(R * V(1:3), vel(1:3))); R' * (acc(4:6) - cross(R * V(1:3), vel(4:6)))];
+J= Jb;
+dJ =dJb;
 % ddxc = ddxd + A_x_inv(J, M) * ((Mu_x(J, M, dJ, C) + Bx) * dxe + Kx * xe); % PD+
 % if choice == 1 % pd
     ddxc = ddxd + Kx * xe + Bx * dxe;
@@ -148,7 +159,7 @@ dxe = dxd - dx;
 
 a1 = pinv_J_x(J, M, ddxc - dJ * dq);
 
-q0 = inverse_kin_kuka_robot_kesai_near(robot, Td, kesai, q);
+q0 = inverse_kin_kuka_kesai_near(Td, kesai, q,[1e-5, 1e-5]);
 qe = q0 - q;
 qed = -dq;
 a2 = null_proj(J, M, M \ (Bn * qed + Kn * qe));
@@ -164,9 +175,9 @@ end
 
 function F = Wrench(t, y, robot)
 F = zeros(6, robot.dof);
-if t > 1 
-    F(:,4) = [0, 0, 0, 0, 0, 10]';
+% if t > =0 
+    % F(:,4) = [0, 0, 0, 0, 0, 10]';
     F(:,7) = [0, 0, 0, 0, 0, 10]';
-end
+% end
 end
 
