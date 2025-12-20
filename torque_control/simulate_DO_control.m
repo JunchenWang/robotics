@@ -1,7 +1,7 @@
 function simulate_DO_control
 
 port = udpport("byte");
-robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));
+robot = convert_robot_tree2(importrobot('urdf\lbr_description\urdf\iiwa7.urdf'));
 nominal_robot = robot;
 nominal_robot.mass = robot.mass;% error
 n = robot.dof;

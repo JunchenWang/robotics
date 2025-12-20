@@ -1,7 +1,7 @@
 function simulate_discrete_dual_loop_admittance_control_with_velocity
 
 port = udpport("byte");
-robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));
+robot = convert_robot_tree2(importrobot('urdf\lbr_description\urdf\iiwa7.urdf'));
 n = robot.dof;
 
 Kp_s = [100,100,100,100,100,100,100]';
@@ -27,7 +27,7 @@ y0(1:n) = [-40 75 0 -94 0 -81 0] / 180 * pi;
 Ts = forward_kin_general(robot, y0);
 kesai = cal_kuka_kesai(y0);
 Ts(1:3,1:3) = [-1, 0, 0; 0 1 0;0 0 -1];
-y0(1:n) = inverse_kin_kuka_robot_kesai_near(robot, Ts, kesai, y0(1:n));
+y0(1:n) = inverse_kin_kuka_kesai_near(Ts, kesai, y0(1:n), [1e-5, 1e-5]);
 ptp(port, y0(1:n)');
 Ts = forward_kin_general(robot, y0);
 refZ = Ts(3,4);

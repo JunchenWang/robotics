@@ -1,4 +1,4 @@
-function [J, dJ, x, error] = rcm_jacobian(robot, q, dq, p1_F, p2_F, rcm)
+function [J, dJ, x, error, P2, J2] = rcm_jacobian(robot, q, dq, p1_F, p2_F, rcm)
 % x: the nearest point on p1-p2 to rcm. rcm is defined in base frame.
 T1 = [eye(3), p1_F; 0 0 0 1];
 T2 = [eye(3), p2_F; 0 0 0 1];
