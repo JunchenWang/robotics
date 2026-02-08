@@ -48,7 +48,6 @@ c++/eigen*/
 *.filters
 *.orig
 *.autosave
-urdf/
 *.rar
 *.zip
 applications/
