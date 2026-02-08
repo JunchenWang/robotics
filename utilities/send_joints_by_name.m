@@ -1,5 +1,7 @@
 function send_joints_by_name(port, jointNames, jointPos, ip, no)
 % UDP 发送关节角（rad），时间戳 = 秒 + 纳秒
+% jointNames是cell array 包含关节名，或者chain名
+% jointPos是cell array 包含关节角度，或者关节角度的数组
 if nargin < 5
     no = 7755;
 end
