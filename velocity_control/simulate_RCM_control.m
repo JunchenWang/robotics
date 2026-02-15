@@ -1,8 +1,8 @@
 function simulate_RCM_control
 % 双环控制7轴机器人轨迹，状态空间4个变量：位置，速度，速度误差积分，位置误差积分
-port = udpport("byte");
-opts = odeset('OutputFcn', @(t, y, flag) odeplot(t, y, flag, port));
+port = udpport("datagram");
 robot = convert_robot_tree2(importrobot('urdf\lbr_description\urdf\iiwa7.urdf'));
+opts = odeset('OutputFcn', @(t, y, flag) odeplot_micsys(t, y, flag, port, robot));
 n = robot.dof;
 y0 = zeros(4 * n, 1);
 
@@ -21,7 +21,7 @@ tspan = [0, 10];
 % start = queryJoints(port);
 y0(1:n) = [  -0.4689    0.4696         0   -1.0671    0.0670    1.2112   -0.3207];
 % y0(1:n) = [0 40 0 -80  -10 45 0] / 180 * pi;
-ptp(port, y0(1:n)');
+ptp_move(port, y0(1:n)');
 kesai = cal_kuka_kesai(y0);
 Ts = forward_kin_general(robot, y0);
 Rs = Ts(1:3,1:3);
@@ -44,7 +44,7 @@ u = @(t, y) speed_controller(t, y, v, Kp_s, Ki_s);
 dynamic = @(t, y) joint_motor_dynamic(t, y, u, d, J, B, r);
 
 [t, y] = ode45(dynamic, tspan, y0, opts);
-
+clear port;
 pos_d = zeros(3, length(t));
 pos_actual = zeros(3, length(t));
 P1 = zeros(3, length(t));
@@ -70,7 +70,7 @@ figure;
 plot(t, dist,'LineWidth', 2);
 % plot(t, dist, t, rcm_error(1,:), '--', t, rcm_error(2,:), '-*','LineWidth', 2);
 xlabel("$t$/s", 'interpreter','latex');
-ylabel('RCM误差/m', 'interpreter','latex');
+ylabel('RCM error/m', 'interpreter','latex');
 % yticks([0,.2, .4, .6, .8, 1.0, 1.2, 1.4]);
 set(gca,'FontSize', 36);
 % figure;
@@ -160,49 +160,6 @@ ps = Ts(1:3,4);
 P1 = ps + Rs * [0, 0, p1]';
 P2 = ps + Rs * [0, 0, p2]';
 prcm = P1 + (P2 - P1) * lambda0;% + [0,0,0.01]'; % change rcm
-end
-
-function ret = odeplot(t, y, flag, port)
-if strcmp(flag, 'init') == 1
-elseif isempty(flag)
-    n = size(y,1) / 4;
-    % n = length(y) / 4;
-    setJoints(port, y(1:n, end));
-    % torque = [torque, y(2 * n+1:3*n, end)];
-else
-end
-ret = 0;
-end
-
-function setJoints(port, jt)
-cmd = sprintf('robot;%f;%f;%f;%f;%f;%f;%f;', jt(1), jt(2), jt(3), jt(4), jt(5)...
-    ,jt(6), jt(7));
-writeline(port,cmd,"127.0.0.1",7755);
-end
-
-function ptp(port, jts, vel)
-if nargin < 3
-    vel = .4;
-end
-start = queryJoints(port);
-wayPoints = [start',jts'];
-Freq = 200;
-rate = rateControl(Freq);
-T = max(abs(jts - start) / vel);
-numSamples = round(T * Freq) + 1;
-jt = trapveltraj(wayPoints,numSamples);
-for i = 1 : numSamples
-    setJoints(port, jt(:,i));
-    waitfor(rate);
-end
-end
-
-function joints = queryJoints(port)
-% ";" 表示查询关节角
-writeline(port,"robot;","127.0.0.1",7755);
-s = readline(port);
-joints = sscanf(s,'%f;%f;%f;%f;%f;%f;%f;')';
-joints = mod(joints + pi, 2*pi) - pi;
 end
 
 function yd = joint_motor_dynamic(t, y, u, d, J, B, r)

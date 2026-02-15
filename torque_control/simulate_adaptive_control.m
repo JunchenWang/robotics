@@ -1,6 +1,6 @@
 function simulate_adaptive_control
 
-port = udpport("byte");
+port = udpport("datagram");
 robot = convert_robot_tree2(importrobot('urdf\lbr_description\urdf\iiwa7.urdf'));
 robot2 = robot;
 robot2.mass = 1.2 * robot.mass;% error
@@ -10,12 +10,12 @@ tspan = [0, 10];
 MassMatrix = @(t, y) [eye(n), zeros(n, n), zeros(n, 10 * n); 
                       zeros(n), mass_matrix(robot, y(1:n)), zeros(n, 10 * n); 
                       zeros(10 * n, 2 * n), eye(10 * n)];
-opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot(t, y, flag, port, robot));
+opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot_micsys(t, y, flag, port, robot));
 
 y0 = [zeros(2*n,1); get_dynamics(robot2)];
 y0(1:n) = [0 75 0 -94 0 -81 0] / 180 * pi;
 qs = y0(1:n);
-ptp(port, qs');
+ptp_move(port, qs');
 kesai = cal_kuka_kesai(qs);
 Ts = forward_kin_general(robot, qs);
 Te = Ts;
@@ -135,42 +135,4 @@ if t > 1
     F(:,4) = [0, 0, 0, 0, 0, 10]';
     F(:,7) = [0, 0, 0, 0, 10, 0]';
 end
-end
-
-
-function ret = odeplot(t, y, flag, port, robot)
-if strcmp(flag, 'init') == 1
-elseif isempty(flag)
-    setJoints(port, y(1:robot.dof, end));
-else
-end
-ret = 0;
-end
-
-function ptp(port, jts, vel)
-if nargin < 3
-    vel = .4;
-end
-start = queryJoints(port);
-wayPoints = [start',jts'];
-Freq = 200;
-rate = rateControl(Freq);
-T = max(abs(jts - start) / vel);
-numSamples = round(T * Freq) + 1;
-jt = trapveltraj(wayPoints,numSamples);
-for i = 1 : numSamples
-    setJoints(port, jt(:,i));
-    waitfor(rate);
-end
-end
-
-function setJoints(port, jt)
-cmd = 'robot;' + join(string(jt),';') + ';';
-writeline(port,cmd,"127.0.0.1",7755);
-end
-
-function joints = queryJoints(port)
-writeline(port,"robot;","127.0.0.1",7755);
-s = split(readline(port), ';');
-joints = double(s(1:end-1))';
 end

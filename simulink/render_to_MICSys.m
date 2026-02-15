@@ -20,7 +20,7 @@ function setup(block)
     
     % 仿真状态兼容性
     block.SimStateCompliance = 'DefaultSimState';
-    port = udpport("byte");
+    port = udpport("datagram");
     % 注册回调方法
     % block.RegBlockMethod('PostPropagationSetup', @DoPostPropSetup);
     % block.RegBlockMethod('InitializeConditions', @InitializeConditions);

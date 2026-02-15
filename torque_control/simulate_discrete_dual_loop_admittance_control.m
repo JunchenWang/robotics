@@ -1,6 +1,6 @@
 function simulate_discrete_dual_loop_admittance_control
 
-port = udpport("byte");
+port = udpport("datagram");
 robot = convert_robot_tree2(importrobot('urdf\lbr_description\urdf\iiwa7.urdf'));
 robot2 = robot;
 robot2.mass = robot.mass;% error
@@ -24,15 +24,15 @@ Bn = 2 * eye(n);
 Kn = 20 * eye(n);
 tspan = [0, 10];
 MassMatrix = @(t, y) blkdiag(eye(n), mass_matrix(robot, y(1:n)), eye(n));
-opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot(t, y, flag, port, robot));
+opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot_micsys(t, y, flag, port, robot));
 
 y0 = zeros(3*n,1);
 y0(1:n) = [-40 75 0 -94 0 -81 0] / 180 * pi;
 Ts = forward_kin_general(robot, y0);
 kesai = cal_kuka_kesai(y0);
 Ts(1:3,1:3) = [-1, 0, 0; 0 1 0;0 0 -1];
-y0(1:n) = inverse_kin_kuka_robot_kesai_near(robot, Ts, kesai, y0(1:n));
-ptp(port, y0(1:n)');
+y0(1:n) = inverse_kin_kuka_kesai_near(Ts, kesai, y0(1:n), [1e-5,1e-5]);
+ptp_move(port, y0(1:n)');
 Ts = forward_kin_general(robot, y0);
 refZ = Ts(3,4);
 Tds = cell(1,3);
@@ -359,7 +359,7 @@ else % passivity
 end
 tao_x = M * pinv_J_x(Jb, M, ax1 - dJb * qd);
 
-q0 = inverse_kin_kuka_robot_kesai_near(robot, Xd, kesai, q);
+q0 = inverse_kin_kuka_kesai_near(Xd, kesai, q, [1e-5,1e-5]);
 % if isempty(q0)
 %     error('no inverse');
 % end
@@ -423,40 +423,3 @@ if t > 5
 end
 end
 
-
-function ret = odeplot(t, y, flag, port, robot)
-if strcmp(flag, 'init') == 1
-elseif isempty(flag)
-    setJoints(port, y(1:robot.dof, end));
-else
-end
-ret = 0;
-end
-
-function ptp(port, jts, vel)
-if nargin < 3
-    vel = .4;
-end
-start = queryJoints(port);
-wayPoints = [start',jts'];
-Freq = 200;
-rate = rateControl(Freq);
-T = max(abs(jts - start) / vel);
-numSamples = round(T * Freq) + 1;
-jt = trapveltraj(wayPoints,numSamples);
-for i = 1 : numSamples
-    setJoints(port, jt(:,i));
-    waitfor(rate);
-end
-end
-
-function setJoints(port, jt)
-cmd = 'robot;' + join(string(jt),';') + ';';
-writeline(port,cmd,"127.0.0.1",7755);
-end
-
-function joints = queryJoints(port)
-writeline(port,"robot;","127.0.0.1",7755);
-s = split(readline(port), ';');
-joints = double(s(1:end-1))';
-end

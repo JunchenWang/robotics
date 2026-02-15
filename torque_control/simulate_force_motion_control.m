@@ -1,6 +1,6 @@
 function simulate_force_motion_control
 % 力位混合控制仿真
-port = udpport("byte");
+port = udpport("datagram");
 robot = convert_robot_tree2(importrobot('urdf\lbr_description\urdf\iiwa7.urdf'));
 robot2 = robot;
 % robot2.mass = 1.2 * robot.mass;% error
@@ -27,15 +27,15 @@ MassMatrix = @(t, y) [eye(n), zeros(n, 2 * n + 6);
                       zeros(n), mass_matrix(robot, y(1:n)), zeros(n, n + 6); 
                       zeros(n, 2 * n), eye(n), zeros(n, 6); 
                       zeros(6, 3*n), eye(6)];
-opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot(t, y, flag, port, robot));
+opts = odeset('Mass',MassMatrix,'OutputFcn',@(t, y, flag) odeplot_micsys(t, y, flag, port, robot));
 
 y0 = zeros(3*n + 6,1);
 y0(1:n) = [-40 75 0 -94 0 -81 0] / 180 * pi;
 Ts = forward_kin_general(robot, y0);
 kesai = cal_kuka_kesai(y0);
 Ts(1:3,1:3) = [-1, 0, 0; 0 1 0;0 0 -1];
-y0(1:n) = inverse_kin_kuka_robot_kesai_near(robot, Ts, kesai, y0(1:n));
-ptp(port, y0(1:n)');
+y0(1:n) = inverse_kin_kuka_kesai_near(Ts, kesai, y0(1:n), [1e-5, 1e-5]);
+ptp_move(port, y0(1:n)');
 Ts = forward_kin_general(robot, y0);
 Te = Ts;
 Te(2,4) = Te(2,4) + 0.8;
@@ -296,42 +296,4 @@ if real_f < 0
     F(:,end) = adjoint_T(X)' * [100 * cross(z, [0,0,-1]');0;0;-real_f]; % from s to b
 end
 
-end
-
-
-function ret = odeplot(t, y, flag, port, robot)
-if strcmp(flag, 'init') == 1
-elseif isempty(flag)
-    setJoints(port, y(1:robot.dof, end));
-else
-end
-ret = 0;
-end
-
-function ptp(port, jts, vel)
-if nargin < 3
-    vel = .4;
-end
-start = queryJoints(port);
-wayPoints = [start',jts'];
-Freq = 200;
-rate = rateControl(Freq);
-T = max(abs(jts - start) / vel);
-numSamples = round(T * Freq) + 1;
-jt = trapveltraj(wayPoints,numSamples);
-for i = 1 : numSamples
-    setJoints(port, jt(:,i));
-    waitfor(rate);
-end
-end
-
-function setJoints(port, jt)
-cmd = 'robot;' + join(string(jt),';') + ';';
-writeline(port,cmd,"127.0.0.1",7755);
-end
-
-function joints = queryJoints(port)
-writeline(port,"robot;","127.0.0.1",7755);
-s = split(readline(port), ';');
-joints = double(s(1:end-1))';
 end

@@ -1,6 +1,6 @@
 function simulate_DO_control
 
-port = udpport("byte");
+port = udpport("datagram");
 robot = convert_robot_tree2(importrobot('urdf\lbr_description\urdf\iiwa7.urdf'));
 nominal_robot = robot;
 nominal_robot.mass = robot.mass;% error
