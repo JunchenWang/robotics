@@ -1,7 +1,7 @@
 function simulate_force_motion_control
 % 力位混合控制仿真
 port = udpport("datagram");
-robot = convert_robot_tree2(importrobot('urdf\lbr_description\urdf\iiwa7.urdf'));
+robot = read_urdf('urdf\lbr_description\urdf\iiwa7.urdf');
 robot2 = robot;
 % robot2.mass = 1.2 * robot.mass;% error
 n = robot.dof;

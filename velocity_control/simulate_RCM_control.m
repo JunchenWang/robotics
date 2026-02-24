@@ -1,7 +1,7 @@
 function simulate_RCM_control
 % 双环控制7轴机器人轨迹，状态空间4个变量：位置，速度，速度误差积分，位置误差积分
 port = udpport("datagram");
-robot = convert_robot_tree2(importrobot('urdf\lbr_description\urdf\iiwa7.urdf'));
+robot = read_urdf('urdf\lbr_description\urdf\iiwa7.urdf');
 opts = odeset('OutputFcn', @(t, y, flag) odeplot_micsys(t, y, flag, port, robot));
 n = robot.dof;
 y0 = zeros(4 * n, 1);

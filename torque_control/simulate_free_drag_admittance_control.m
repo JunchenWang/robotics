@@ -1,7 +1,7 @@
 function simulate_free_drag_admittance_control
 
 port = udpport("datagram");
-robot = convert_robot_tree2(importrobot('urdf\lbr_description\urdf\iiwa7.urdf'));
+robot = read_urdf('urdf\lbr_description\urdf\iiwa7.urdf');
 robot2 = robot;
 robot2.mass = robot.mass;% error
 n = robot.dof;

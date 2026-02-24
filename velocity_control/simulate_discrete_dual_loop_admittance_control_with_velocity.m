@@ -1,7 +1,7 @@
 function simulate_discrete_dual_loop_admittance_control_with_velocity
 
 port = udpport("datagram");
-robot = convert_robot_tree2(importrobot('urdf\lbr_description\urdf\iiwa7.urdf'));
+robot = read_urdf('urdf\lbr_description\urdf\iiwa7.urdf');
 n = robot.dof;
 
 Kp_s = [100,100,100,100,100,100,100]';
