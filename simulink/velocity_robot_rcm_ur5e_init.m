@@ -1,0 +1,17 @@
+rigid_body = importrobot('urdf\ur_description\urdf\ur5e-tool.urdf');
+rigid_body.DataFormat = 'column';
+rigid_body.Gravity = [0 0 -9.81];
+init_joint_pos = deg2rad([13.3261   -125.7260  -108.7676  -31.7237    87.4672    0]);
+robot = get_robot_chain(rigid_body, 'tool0','world');
+n = robot.dof;
+T_init = forward_kin_general(robot, init_joint_pos);
+Rs = T_init(1:3,1:3);
+ps = T_init(1:3,4);
+L = 0.3;
+P1 = ps;
+P2 = ps + Rs * [0, 0, L]';
+Prcm = [0.605, 0, 0]';
+l1 = Prcm - P1;
+l2 = P2 - P1;
+lambda0 = dot(l1, l2) / (l2'*l2);
+robot.L = L;
