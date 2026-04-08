@@ -159,7 +159,7 @@ Rs = Ts(1:3,1:3);
 ps = Ts(1:3,4);
 P1 = ps + Rs * [0, 0, p1]';
 P2 = ps + Rs * [0, 0, p2]';
-prcm = P1 + (P2 - P1) * lambda0;% + [0,0,0.01]'; % change rcm
+prcm = P1 + (P2 - P1) * lambda0 + [0.01, 0.01, 0.01]';% + [0,0,0.01]'; % change rcm
 end
 
 function yd = joint_motor_dynamic(t, y, u, d, J, B, r)
