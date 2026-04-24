@@ -15,8 +15,8 @@ function setup(block)
     block.InputPort(1).DatatypeID        = 0;   % double
     block.InputPort(1).Complexity        = 'Real';
     
-    % 采样时间配置 [-1 0] 表示继承采样时间
-    block.SampleTimes = [-1 0];
+    % 这个如果写成-1有些高频仿真会很慢！
+    block.SampleTimes = [0.05 0];
     
     % 仿真状态兼容性
     block.SimStateCompliance = 'DefaultSimState';
