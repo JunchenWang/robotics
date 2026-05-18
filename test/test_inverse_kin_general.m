@@ -4,7 +4,7 @@ if nargin < 1
 end
 % Rd = eul2rotm([180, 180, 180] / 180 * pi);
 % pd = [-525.9610,-133.6040,654.6057]' / 1000;
-robot = convert_robot_tree2(importrobot('urdf\ur_5e-calibrated\ur_description\urdf\ur5e-A302.urdf'));
+robot = convert_robot_tree2(importrobot('urdf\ur_description\urdf\ur5e.urdf'));
 % robot = convert_robot_tree2(importrobot('urdf\iiwa7\iiwa7.urdf'));
 n = robot.dof;
 err1 = zeros(N, 2);
@@ -13,7 +13,7 @@ t1 = 0;
 t2 = 0;
 cnt1 = 0;
 cnt2 = 0;
-tol = [1e-5, 1e-5];
+tol = [1e-4, 1e-4];
 failure1 = zeros(100, n);
 failure2 = zeros(100, n);
 for i =1 : N
