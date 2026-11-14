@@ -26,7 +26,7 @@
         <light name="fill_light" directional="true" pos="1 1 2" dir="-0.35 -0.35 -1"
                diffuse="0.24 0.29 0.38" specular="0.05 0.05 0.05" castshadow="false"/>
         <!-- Y is up. The floor surface is below the rod's full swing. -->
-        <geom name="floor" type="plane" pos="0 -0.55 0" size="2.4 1.3 0.1"
+        <geom name="floor" type="plane" pos="0 -0.6 0" size="2.4 1.3 0.1"
               quat="0.7071067811865476 -0.7071067811865476 0 0" material="floor_material"/>
         <body name="base_link">
             <geom name="rail" type="cylinder" fromto="-1 0 0 1 0 0" size="0.005"
@@ -56,9 +56,7 @@
         <jointvel name="cart_velocity" joint="joint1"/>
         <jointvel name="rod_angular_velocity" joint="joint2"/>
     </sensor>
-    <custom>
-        <text name="simulink_reset_keyframe" data="initial"/>
-    </custom>
+
     <keyframe>
         <key name="initial" qpos="0 0.01" qvel="0 0"/>
     </keyframe>
