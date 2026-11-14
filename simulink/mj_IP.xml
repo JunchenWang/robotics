@@ -1,0 +1,65 @@
+<mujoco model="IP">
+    <compiler angle="radian"/>
+    <!-- Match the gravity direction. The rod points up at qpos = 0. -->
+    <option gravity="0 -9.81 0" timestep="0.002"/>
+
+    <visual>
+        <!-- Start near the front view, 10 degrees away from the free-camera pole. -->
+        <global cameraid="-1" azimuth="90" elevation="-90" fovy="40"/>
+        <headlight ambient="0.28 0.28 0.28" diffuse="0.25 0.25 0.25"
+                   specular="0.03 0.03 0.03"/>
+        <quality shadowsize="2048"/>
+    </visual>
+    <statistic center="0 0.2 0" extent="2.3333333"/>
+
+    <asset>
+        <texture name="blue_sky" type="skybox" builtin="gradient" width="256" height="256"
+                 rgb1="0.22 0.45 0.76" rgb2="0.06 0.16 0.34"/>
+        <texture name="floor_checker" type="2d" builtin="checker" width="128" height="128"
+                 rgb1="0 0 0" rgb2="1 1 1"/>
+        <material name="floor_material" texture="floor_checker" texrepeat="12 6"/>
+    </asset>
+
+    <worldbody>
+        <light name="key_light" directional="true" pos="-1 2 1" dir="0.35 -1 -0.45"
+               diffuse="0.75 0.72 0.67" specular="0.22 0.22 0.22" castshadow="true"/>
+        <light name="fill_light" directional="true" pos="1 1 2" dir="-0.35 -0.35 -1"
+               diffuse="0.24 0.29 0.38" specular="0.05 0.05 0.05" castshadow="false"/>
+        <!-- Y is up. The floor surface is below the rod's full swing. -->
+        <geom name="floor" type="plane" pos="0 -0.55 0" size="2.4 1.3 0.1"
+              quat="0.7071067811865476 -0.7071067811865476 0 0" material="floor_material"/>
+        <body name="base_link">
+            <geom name="rail" type="cylinder" fromto="-1 0 0 1 0 0" size="0.005"
+                  rgba="1 1 1 1"/>
+            <body name="car">
+                <inertial pos="0 0 0" mass="1" diaginertia="0.001667 0.001667 0.001667"/>
+                <joint name="joint1" type="slide" axis="1 0 0" limited="true" range="-1 1"/>
+                <geom name="cart" type="box" size="0.05 0.05 0.05" rgba="1 1 0 1"
+                      contype="0" conaffinity="0"/>
+                <body name="rod" pos="0 0 0.0625">
+                    <inertial pos="0 0.25 0" mass="1" diaginertia="0.0208333 1e-8 0.0208333"/>
+                    <joint name="joint2" type="hinge" axis="0 0 1" limited="true" range="-10 10"/>
+                    <geom name="rod" type="box" pos="0 0.25 0" size="0.025 0.25 0.0125"
+                          rgba="0 1 1 1" contype="0" conaffinity="0"/>
+                </body>
+            </body>
+        </body>
+    </worldbody>
+
+    <actuator>
+        <motor name="cart_force" joint="joint1" gear="1"/>
+    </actuator>
+
+    <sensor>
+        <jointpos name="cart_position" joint="joint1"/>
+        <jointpos name="rod_angle" joint="joint2"/>
+        <jointvel name="cart_velocity" joint="joint1"/>
+        <jointvel name="rod_angular_velocity" joint="joint2"/>
+    </sensor>
+    <custom>
+        <text name="simulink_reset_keyframe" data="initial"/>
+    </custom>
+    <keyframe>
+        <key name="initial" qpos="0 0.01" qvel="0 0"/>
+    </keyframe>
+</mujoco>

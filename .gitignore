@@ -32,9 +32,7 @@ _ReSharper*/
 packages/
 *.mat
 *.slxc
-*.xml
 codegen/
-*.mexw64
 *.prj
 c++/eigen*/
 *.avi
