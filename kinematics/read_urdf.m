@@ -1,11 +1,13 @@
-function robot = read_urdf(filename, flange_link, base_link)
+function [robot, joint_names] = read_urdf(filename, flange_link, base_link)
 %READ_URDF Build a robot chain from a URDF file or URDF XML text.
 %   The base defaults to the root link. The flange defaults to the last
 %   link in depth-first order, with siblings ordered by joint name.
 %   The chain supports fixed, revolute, continuous, and prismatic joints.
+%   JOINT_NAMES lists the movable joints in base-to-flange order.
 %   Gravity in the base frame is [0, 0, -9.81] m/s^2.
 
 robot = [];
+joint_names = {};
 validateattributes(filename, {'char', 'string'}, {'scalartext', 'nonempty'});
 source = char(filename);
 parser = matlab.io.xml.dom.Parser;
@@ -80,7 +82,7 @@ for i = 1:numel(chain)
     link = chain(i);
     bodyList{i} = readBody(linkNodes{link}, jointNodes{incomingJoint(link)});
 end
-robot = build_robot_chain(bodyList);
+[robot, joint_names] = build_robot_chain(bodyList);
 robot.gravity = [0, 0, -9.81];
 end
 
