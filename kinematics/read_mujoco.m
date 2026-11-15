@@ -398,7 +398,8 @@ end
 
 function [pose, halfLength] = fromToPose(props)
 endpoints = numbers(props, 'fromto', zeros(1, 6));
-direction = endpoints(4:6) - endpoints(1:3);
+% MuJoCo compiles the local +Z axis to point from the second endpoint to the first.
+direction = endpoints(1:3) - endpoints(4:6);
 center = (endpoints(4:6) + endpoints(1:3)) / 2;
 halfLength = norm(direction) / 2;
 pose = make_tform(zRotation(direction), center);
