@@ -1,7 +1,6 @@
 <mujoco model="ur5e scene">
   <include file="ur5e.xml"/>
 
-  <statistic center="-0.08 -0.08 0.53" extent="1.25"/>
 
   <visual>
     <headlight diffuse="0.6 0.6 0.6" ambient="0.1 0.1 0.1" specular="0 0 0"/>

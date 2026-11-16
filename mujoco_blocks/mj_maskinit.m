@@ -65,22 +65,23 @@ else
 end
 
 %% RGB
-
-% blankBusPath = [mjBlk, '/rgbToBus/blankBus'];
-% rgbToBusPath = [mjBlk, '/rgbToBus'];
-rgbOut1Path = [mjBlk, '/rgb'];
-try
-    rgbFieldnames = fieldnames(Simulink.Bus.createMATLABStruct(rgbBus));
-    %fails when it is an empty bus TODO. remove try catch
-    mo.getDialogControl('rgbBusText').Prompt = ['RGB Bus Type: ', rgbBus];
-catch
-    rgbFieldnames = [];
-    mo.getDialogControl('rgbBusText').Prompt = ['RGB Bus Type: ', 'NA'];
+rgbRateTransition = [mjBlk, '/Rate Transition2'];
+rgbFieldnames = {};
+if ~isempty(rgbBus)
+    try
+        rgbFieldnames = fieldnames(Simulink.Bus.createMATLABStruct(rgbBus));
+    catch
+        % A model without cameras can have an empty bus.
+    end
 end
- 
+
 if isempty(rgbFieldnames)
+    mo.getDialogControl('rgbBusText').Prompt = ['RGB Bus Type: ', 'NA'];
+    set_param(rgbRateTransition, 'Commented', 'through');
     replacer(mjBlk, 'rgb', 'simulink/Sinks/Terminator')
 else
+    mo.getDialogControl('rgbBusText').Prompt = ['RGB Bus Type: ', rgbBus];
+    set_param(rgbRateTransition, 'Commented', 'off');
     outportName = 'rgb';
     replacer(mjBlk, outportName, 'simulink/Sinks/Out1');
     set_param([mjBlk, '/', outportName], "Port", num2str(portIndex));
@@ -88,33 +89,35 @@ else
 end
 
 %% Depth
-mo.getDialogControl('rgbBusText').Prompt = ['RGB Bus Type: ', rgbBus];
-depthOut1Path = [mjBlk, '/depth'];
+depthRateTransition = [mjBlk, '/Rate Transition3'];
 depthConverterPath = [mjBlk, '/OpenGL Depth conversion'];
-try
-    depthFieldnames = fieldnames(Simulink.Bus.createMATLABStruct(depthBus));
-    %fails when it is an empty bus TODO. remove try catch
-    mo.getDialogControl('depthBusText').Prompt = ['Depth Bus Type: ', depthBus];
-catch
-    depthFieldnames = [];
-    mo.getDialogControl('depthBusText').Prompt = ['Depth Bus Type: ', 'NA'];
-end
 depthOutputOption = strcmp(get_param(mjBlk, 'depthOutOption'), 'on');
+depthFieldnames = {};
+if depthOutputOption && ~isempty(depthBus)
+    try
+        depthFieldnames = fieldnames(Simulink.Bus.createMATLABStruct(depthBus));
+    catch
+        % A model without cameras can have an empty bus.
+    end
+end
 
-if isempty(depthFieldnames) || ~depthOutputOption
+if isempty(depthFieldnames)
+    mo.getDialogControl('depthBusText').Prompt = ['Depth Bus Type: ', 'NA'];
+    set_param(depthRateTransition, 'Commented', 'through');
     set_param(depthConverterPath, 'Commented', 'on');
     replacer(mjBlk, 'depth', 'simulink/Sinks/Terminator')
 else
+    mo.getDialogControl('depthBusText').Prompt = ['Depth Bus Type: ', depthBus];
+    set_param(depthRateTransition, 'Commented', 'off');
     set_param(depthConverterPath, 'Commented', 'off');
+    [znear, zfar] = mj_depth_near_far(xmlFile);
+    set_param(mjBlk, 'znear', num2str(znear));
+    set_param(mjBlk, 'zfar', num2str(zfar));
     outportName = 'depth';
     replacer(mjBlk, 'depth', 'simulink/Sinks/Out1');
     set_param([mjBlk, '/', outportName], "Port", num2str(portIndex));
     portIndex = portIndex+1;
 end
-
-[znear, zfar] = mj_depth_near_far(xmlFile);
-set_param(mjBlk, 'znear', num2str(znear));
-set_param(mjBlk, 'zfar', num2str(zfar));
 
 %% Sample Time
 sampleTime = mj_sampletime(xmlFile);

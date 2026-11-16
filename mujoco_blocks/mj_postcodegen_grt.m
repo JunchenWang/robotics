@@ -1,6 +1,11 @@
 function mj_postcodegen_grt(buildInfo)
 % Copyright 2022-2023 The MathWorks, Inc.
-    buildInfo.addCompileFlags('-O3 -fPIC','OPTS');
+    if ispc
+        buildInfo.addCompileFlags('/std:c++17', 'CPP_OPTS');
+    else
+        buildInfo.addCompileFlags('-O3 -fPIC', 'OPTS');
+        buildInfo.addCompileFlags('-std=c++17', 'CPP_OPTS');
+    end
 
     buildInfo.addIncludePaths(getpref('mujoco', 'incPaths'));
     buildInfo.addSourcePaths(getpref('mujoco', 'srcPaths'));
