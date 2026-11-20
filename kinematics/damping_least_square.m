@@ -1,8 +1,16 @@
 function X = damping_least_square(A, B, lambda, thr)
-% min ||AX - B||^2 + lambda ||X||^2
+% Minimize ||A*X - B||^2 + lambda_sq*||X||^2.
+% A positive threshold blends damping in over [0.5*thr, 2*thr].
 AAt = A * A';
-if cond(AAt) > thr
-    X = (A' * A + lambda^2 * eye(size(A, 2))) \ (A' * B);
-else
-    X = A' * (AAt \ B);
+lambda_sq = lambda^2;
+if thr > 0
+    if isinf(thr)
+        lambda_sq = 0;
+    else
+        u = min(1, max(0, (cond(AAt) / thr - 0.5) / 1.5));
+        weight = u^2 * (3 - 2*u);
+        lambda_sq = lambda_sq * weight;
+    end
+end
+X = A' * ((AAt + lambda_sq * eye(size(AAt, 1), 'like', AAt)) \ B);
 end
