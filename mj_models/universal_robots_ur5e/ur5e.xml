@@ -150,6 +150,6 @@
     </sensor>
 
     <keyframe>
-        <key name="initial" qpos="0 0 0 0 0 0" qvel="0 0 0 0 0 0"/>
+        <key name="initial" qpos="0 -0.9 0.9 0 0 0" qvel="0 0 0 0 0 0"/>
     </keyframe>
 </mujoco>
