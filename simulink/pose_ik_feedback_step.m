@@ -4,6 +4,10 @@ function pose_ik_feedback_step(block)
 % Inputs: 4-by-4 desired tool pose in the base frame and measured joints (rad).
 % Outputs: joint position command (rad) and measured-pose convergence.
 % Each sample takes one damped least-squares step from the measured joints.
+% cfg.qd_max optionally overrides the UR5e default of pi rad/s. Use a
+% scalar or one value per joint (rad/s for revolute, m/s for prismatic).
+% Use +Inf to disable speed limiting when the velocity controller's input
+% is limited by the caller.
 
 block.NumDialogPrms = 2;
 block.DialogPrmsTunable = {'Nontunable', 'Nontunable'};
@@ -18,6 +22,11 @@ assert(all(cfg.q_limits(:, 1) <= cfg.q_limits(:, 2)), ...
 validateattributes(cfg.damping, {'double'}, {'scalar', 'real', 'finite', 'positive'});
 validateattributes(cfg.step_size, {'double'}, {'scalar', 'real', 'positive', '<=', 1});
 validateattributes(cfg.tolerance, {'double'}, {'vector', 'numel', 2, 'real', 'finite', 'positive'});
+if isfield(cfg, 'qd_max')
+    validateattributes(cfg.qd_max, {'double'}, {'vector', 'real', 'nonnan', 'nonnegative', 'nonempty'});
+    assert(isscalar(cfg.qd_max) || numel(cfg.qd_max) == n, ...
+        'pose_ik_feedback_step:InvalidSpeedLimits', 'Specify one speed limit or one per joint.');
+end
 
 block.NumInputPorts = 2;
 block.NumOutputPorts = 2;
@@ -76,6 +85,12 @@ regularization = cfg.damping^2 * eye(6);
 delta_q = J_b.' * ((J_b * J_b.' + regularization) \ e_b);
 if all(isfinite(delta_q))
     q_next = q_measured + cfg.step_size * delta_q;
-    q_command = max(cfg.q_limits(:, 1), min(q_next, cfg.q_limits(:, 2)));
+    q_command = clip(q_next, cfg.q_limits(:, 1), cfg.q_limits(:, 2));
+    if isfield(cfg, 'qd_max')
+        qd_max = cfg.qd_max(:);
+        max_step = cfg.sample_time * qd_max;
+        % Limit recovery steps even when feedback is outside the position limits.
+        q_command = clip(q_command, q_measured - max_step, q_measured + max_step);
+    end
 end
 end
