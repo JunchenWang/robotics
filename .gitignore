@@ -51,3 +51,5 @@ c++/eigen*/
 applications/
 slprj/
 *.asv
+*.yaml
+urdf/
