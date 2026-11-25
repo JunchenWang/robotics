@@ -10,7 +10,6 @@
                    specular="0.03 0.03 0.03"/>
         <quality shadowsize="2048"/>
     </visual>
-    <statistic center="0 0.2 0" extent="2.3333333"/>
 
     <asset>
         <texture name="blue_sky" type="skybox" builtin="gradient" width="256" height="256"
