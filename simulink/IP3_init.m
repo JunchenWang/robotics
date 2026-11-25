@@ -21,7 +21,12 @@ K = place(A, B, p);
 %% 极点配置
 % L = place(A', C', p)';
 kf = -1 / (C*((A - B*K) \ B));
-Q = 1e-2;
-R = 1e-4;
+noise_sample_time = 1e-2;
+force_noise_variance = 1e-2;
+position_noise_variance = 1e-4;
+
+% Random Number 输出单次采样方差。连续 kalman 使用白噪声谱密度。
+Q = force_noise_variance * noise_sample_time;
+R = position_noise_variance * noise_sample_time;
 %%计算卡尔曼最优增益
 [~,L] = kalman(ss(A, [B, B], C, [D, D]), Q, R);
